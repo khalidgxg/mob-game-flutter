@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:mobrush_save/mobrush_save.dart';
 
@@ -60,19 +63,39 @@ class _HomeScreenState extends State<HomeScreen> {
   // and one saturated gold CTA. Gold borders are the reference's single
   // strongest signature -- the earlier version's flat blue-grey outlines are
   // what made it read as a wireframe rather than the finished screen.
-  static const _bgNavy = Color(0xFF061638);
-  static const _bgDeep = Color(0xFF020B1F);
-  static const _glow = Color(0xFF12346E);
+  // Palette read off the approved reference. The two things that make that
+  // screen read as finished rather than as a wireframe are (a) every panel
+  // is *translucent glass* over the backdrop -- a blue-tinted gradient with
+  // a bright hairline along its top edge -- not a solid fill, and (b) the
+  // selected element carries its own light. Both are modelled below.
+  static const _bgCore = Color(0xFF17407E); // glow behind the castle
+  static const _bgNavy = Color(0xFF0A2251);
+  static const _bgDeep = Color(0xFF04102C);
   static const _titleBlue = Color(0xFF73C7FF);
   static const _gold = Color(0xFFFFC53D);
   static const _goldBright = Color(0xFFFFE071);
   static const _goldDeep = Color(0xFFE08A00);
-  static const _goldEdge = Color(0xFFC98A16);
-  static const _chipDark = Color(0xFF0A1E45);
-  static const _chipDarker = Color(0xFF06122C);
-  static const _navActive = Color(0xFF1668DE);
-  static const _navIdle = Color(0xFF0B1F44);
+  static const _goldEdge = Color(0xFFD9A22B);
+  static const _navActive = Color(0xFF2E86F5);
+  static const _navActiveDeep = Color(0xFF1560D0);
   static const _plusGreen = Color(0xFF2FBF4A);
+
+  /// Translucent blue glass, brighter at the top — the fill every framed
+  /// panel in the reference uses.
+  static const _glassFill = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x59FFFFFF), Color(0x4D3D82D6), Color(0x59071B3F), Color(0x73030D24)],
+    stops: [0.0, 0.035, 0.55, 1.0],
+  );
+
+  /// The same glass, lit from within — used by the active nav tab.
+  static const _glassActive = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x8CFFFFFF), Color(0xFF4E9BFF), _navActive, _navActiveDeep],
+    stops: [0.0, 0.05, 0.5, 1.0],
+  );
 
   int get _totalStages => 3; // Stage 1-3 content authored so far.
   int get _completedStages =>
@@ -89,31 +112,35 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: _bgDeep,
       body: Container(
-        // The reference's backdrop is a single cool glow centred behind the
-        // castle, fading to near-black at the corners -- not a flat fill.
         decoration: const BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -0.15),
-            radius: 1.05,
-            colors: [_glow, _bgNavy, _bgDeep],
-            stops: [0.0, 0.55, 1.0],
+            center: Alignment(0, -0.05),
+            radius: 1.0,
+            colors: [_bgCore, _bgNavy, _bgDeep],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              children: [
-                const SizedBox(height: 6),
-                Expanded(flex: 58, child: _buildHeader()),
-                const SizedBox(height: 4),
-                Expanded(flex: 96, child: _buildTitle()),
-                Expanded(flex: 540, child: _buildCampaignHero()),
-                Expanded(flex: 104, child: _buildPlayButton()),
-                const SizedBox(height: 8),
-                Expanded(flex: 116, child: _buildBottomNav()),
-                const SizedBox(height: 4),
-              ],
+        child: CustomPaint(
+          // Light rays fanning out from behind the castle — the reference's
+          // backdrop is not a plain gradient, and without these the screen
+          // reads flat no matter how good the chrome is.
+          painter: _RayPainter(),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Column(
+                children: [
+                  const SizedBox(height: 6),
+                  Expanded(flex: 60, child: _buildHeader()),
+                  const SizedBox(height: 6),
+                  Expanded(flex: 118, child: _buildTitle()),
+                  Expanded(flex: 520, child: _buildCampaignHero()),
+                  Expanded(flex: 104, child: _buildPlayButton()),
+                  const SizedBox(height: 10),
+                  Expanded(flex: 118, child: _buildBottomNav()),
+                  const SizedBox(height: 4),
+                ],
+              ),
             ),
           ),
         ),
@@ -166,7 +193,9 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _chipDarker,
+              gradient: const RadialGradient(
+                colors: [Color(0xFF14418C), Color(0xFF061431)],
+              ),
               border: Border.all(color: _gold, width: 2),
             ),
             padding: const EdgeInsets.all(4),
@@ -193,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                   decoration: BoxDecoration(
-                    color: _chipDarker,
+                    color: const Color(0x66041028),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: _goldEdge, width: 1),
                   ),
@@ -247,19 +276,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// The reference's signature chrome: a rounded navy panel with a gold
-  /// outline and a subtle inner top-light, used by every header element and
-  /// the nav bar.
-  Widget _goldFrame({required Widget child, VoidCallback? onTap}) {
+  /// The reference's signature chrome, and the thing whose absence made the
+  /// first pass read as a wireframe: translucent blue glass over the
+  /// backdrop, a bright hairline catching light along the top edge, a warm
+  /// gold rim, and a soft drop shadow lifting it off the page.
+  Widget _goldFrame({
+    required Widget child,
+    VoidCallback? onTap,
+    double radius = 12,
+    Gradient gradient = _glassFill,
+    List<BoxShadow> glow = const [],
+  }) {
     final panel = Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [_chipDark, _chipDarker],
-        ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _goldEdge, width: 1.6),
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: _goldEdge, width: 2),
+        boxShadow: [
+          const BoxShadow(color: Color(0x59000814), blurRadius: 10, offset: Offset(0, 3)),
+          ...glow,
+        ],
       ),
       child: child,
     );
@@ -325,40 +361,53 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: _startBattle,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.all(4),
+        // Outer navy glass rail, exactly as the reference frames its CTA —
+        // the gold slab is inset inside it, not floating bare on the page.
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_goldBright, _gold, _goldDeep],
-            stops: [0.0, 0.45, 1.0],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _goldBright, width: 2),
+          gradient: _glassFill,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _goldEdge, width: 2),
           boxShadow: const [
-            BoxShadow(color: Color(0x66FFA415), blurRadius: 18, spreadRadius: 1),
+            BoxShadow(color: Color(0x59FFA415), blurRadius: 24, spreadRadius: 1),
+            BoxShadow(color: Color(0x59000814), blurRadius: 10, offset: Offset(0, 3)),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 30,
-              height: 30,
-              child: Image.asset('assets/home/icons/icon_battle_cta.png'),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [_goldBright, _gold, _goldDeep],
+              stops: [0.0, 0.42, 1.0],
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'BATTLE',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
-                shadows: [Shadow(blurRadius: 4, color: Color(0x997A4400))],
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: const Color(0xFFFFF0B0), width: 1.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: Image.asset('assets/home/icons/icon_battle_cta.png'),
               ),
-            ),
-          ],
+              const SizedBox(width: 14),
+              const Text(
+                'BATTLE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.8,
+                  shadows: [
+                    Shadow(blurRadius: 3, offset: Offset(0, 1.5), color: Color(0xB38A4A00)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -374,8 +423,9 @@ class _HomeScreenState extends State<HomeScreen> {
       (_NavTab.map, 'assets/home/icons/icon_map.png', 'MAP'),
     ];
     return _goldFrame(
+      radius: 14,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: const EdgeInsets.all(5),
         child: Row(
           children: items.map((item) {
             final active = item.$1 == _NavTab.home;
@@ -383,34 +433,46 @@ class _HomeScreenState extends State<HomeScreen> {
               child: GestureDetector(
                 onTap: () => _onNavTap(item.$1),
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
                   decoration: BoxDecoration(
-                    gradient: active
-                        ? const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0xFF2E8CFF), _navActive],
-                          )
-                        : null,
-                    color: active ? null : _navIdle,
-                    borderRadius: BorderRadius.circular(9),
+                    // The selected tab carries its own light: a lit glass
+                    // gradient, a gold rim, and a blue halo spilling onto the
+                    // bar around it. That halo is the single clearest "this is
+                    // selected" cue in the reference.
+                    gradient: active ? _glassActive : _glassFill,
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: active ? _gold : Colors.transparent,
-                      width: 1.6,
+                      color: active ? _gold : const Color(0x33FFFFFF),
+                      width: active ? 2 : 1,
                     ),
+                    boxShadow: active
+                        ? const [
+                            BoxShadow(color: Color(0x8C2E86F5), blurRadius: 16, spreadRadius: 1),
+                          ]
+                        : null,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(width: 30, height: 30, child: Image.asset(item.$2)),
-                      const SizedBox(height: 2),
+                      SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: Opacity(
+                          opacity: active ? 1 : 0.72,
+                          child: Image.asset(item.$2),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
                       Text(
                         item.$3,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 0.3,
-                          color: active ? Colors.white : const Color(0xFF7E96C4),
+                          letterSpacing: 0.4,
+                          color: active ? Colors.white : const Color(0xFF8FA8D4),
+                          shadows: active
+                              ? const [Shadow(blurRadius: 4, color: Color(0xAA00204D))]
+                              : null,
                         ),
                       ),
                     ],
@@ -488,3 +550,48 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 enum _NavTab { home, battle, shop, map }
+
+/// Soft light rays fanning out from behind the castle, as in the reference
+/// backdrop. Drawn rather than baked so they cost no texture memory and
+/// scale to any screen: each ray is a thin triangle from a point above the
+/// castle, faded out along its length.
+class _RayPainter extends CustomPainter {
+  static const _rayCount = 14;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final origin = Offset(size.width / 2, size.height * 0.30);
+    final length = size.height * 0.75;
+
+    for (var i = 0; i < _rayCount; i++) {
+      final angle = (i / _rayCount) * 2 * math.pi + 0.12;
+      // Alternating widths keep the fan from looking mechanical.
+      final halfSpread = i.isEven ? 0.030 : 0.017;
+      final path = Path()
+        ..moveTo(origin.dx, origin.dy)
+        ..lineTo(
+          origin.dx + math.cos(angle - halfSpread) * length,
+          origin.dy + math.sin(angle - halfSpread) * length,
+        )
+        ..lineTo(
+          origin.dx + math.cos(angle + halfSpread) * length,
+          origin.dy + math.sin(angle + halfSpread) * length,
+        )
+        ..close();
+
+      canvas.drawPath(
+        path,
+        Paint()
+          ..shader = ui.Gradient.radial(
+            origin,
+            length,
+            const [Color(0x009CC8FF), Color(0x1A8FC0FF), Color(0x00000000)],
+            const [0.0, 0.28, 0.9],
+          ),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RayPainter oldDelegate) => false;
+}
