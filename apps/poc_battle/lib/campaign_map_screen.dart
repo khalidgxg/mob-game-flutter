@@ -4,22 +4,20 @@ import 'package:mobrush_save/mobrush_save.dart';
 import 'main.dart' show Stage1Screen;
 import 'profile_service.dart';
 
-/// Simplified port of `CampaignMapScreen.cs`. The C# version scrolls one
-/// continuous hand-authored atlas image per three-stage group with node
-/// positions read off `CampaignAtlasDefinition`'s normalized anchors — that
-/// illustrated background (the jungle/desert path art) isn't in this repo's
-/// `Assets/Resources`, only the three real node-state badges are
-/// (`CampaignNodeComplete/Current/Locked_v1.png`, used below), so this is a
-/// plain scrollable list of stage cards instead of the real atlas —
-/// same information (lock state, stars, launch), honestly simpler
-/// presentation. Swapping in the real atlas once that background art
-/// exists is exactly the `Stack` + `Align(FractionalOffset)` port the
-/// migration plan already calls for; nothing here blocks that.
+/// Port of `CampaignMapScreen.cs`, now against the real illustrated atlas
+/// (`Assets/Resources/Campaign/Atlases/CampaignAtlas_01.png`, found by
+/// searching mobGame's `Resources` tree more thoroughly than the first
+/// pass — it exists, this repo just hadn't copied it in yet). Node anchors
+/// are hand-read off the three castles actually painted into the atlas
+/// (forest/bottom = Stage 1, bamboo/middle = Stage 2, desert/top = Stage 3)
+/// since `CampaignAtlasDefinition`'s authored normalized anchors aren't in
+/// an exported/readable form here — an approximation grounded in the real
+/// art, not the invented layout the very first version of this screen used.
 ///
 /// Only Stage 1 has real authored battle content in this app (see
-/// `stage1_content.dart`) — every node launches the same `Stage1Screen`,
+/// `game_content.dart`) — every node launches the same `Stage1Screen`,
 /// which is honest about being Stage 1 in its own HUD. Stage 2/3 nodes are
-/// shown to prove the progression list works end to end, not because their
+/// shown to prove the progression works end to end, not because their
 /// battles are actually distinct yet.
 class CampaignMapScreen extends StatefulWidget {
   const CampaignMapScreen({super.key, required this.profile, required this.profileService});
@@ -33,13 +31,16 @@ class CampaignMapScreen extends StatefulWidget {
 
 class _CampaignMapScreenState extends State<CampaignMapScreen> {
   static const _bgNavy = Color(0xFF000B20);
-  static const _cardDark = Color(0xFF05112A);
-  static const _gold = Color(0xFFFFD133);
-  static const _primaryBlue = Color(0xFF0859E6);
-  static const _locked = Color(0xFF1A2438);
-  static const _textDim = Color(0xFF94A9D9);
 
   static const _totalStages = 3;
+
+  // Normalized (fractionX, fractionY) of each stage's castle in
+  // campaign_atlas.jpg, read off the image directly (top-left origin).
+  static const _nodeAnchors = [
+    Offset(0.77, 0.707), // Stage 1 — forest castle, bottom
+    Offset(0.80, 0.427), // Stage 2 — bamboo/jungle castle, middle
+    Offset(0.70, 0.088), // Stage 3 — desert castle, top
+  ];
 
   late PlayerProfile _profile = widget.profile;
 
@@ -63,25 +64,33 @@ class _CampaignMapScreenState extends State<CampaignMapScreen> {
           onPressed: () => Navigator.of(context).pop(_profile),
         ),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _totalStages,
-        separatorBuilder: (_, __) => const SizedBox(height: 14),
-        itemBuilder: (context, i) {
-          final stageNum = i + 1;
-          final stageId = 'stage_$stageNum';
-          final stars = _profile.getStageStars(stageId);
-          final isUnlocked = stageNum <= unlocked;
-          return _StageNode(
-            stageNum: stageNum,
-            stars: stars,
-            unlocked: isUnlocked,
-            onTap: isUnlocked ? () => _launch(stageId) : null,
-            cardDark: _cardDark,
-            gold: _gold,
-            primaryBlue: _primaryBlue,
-            locked: _locked,
-            textDim: _textDim,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          const imageAspect = 700 / 1358; // campaign_atlas.jpg's own aspect
+          final width = constraints.maxWidth;
+          final height = width / imageAspect;
+          return SingleChildScrollView(
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: Stack(
+                children: [
+                  Image.asset('assets/campaign/campaign_atlas.jpg',
+                      width: width, height: height, fit: BoxFit.cover),
+                  for (var i = 0; i < _totalStages; i++)
+                    Positioned(
+                      left: _nodeAnchors[i].dx * width - 34,
+                      top: _nodeAnchors[i].dy * height - 34,
+                      child: _StageNode(
+                        stageNum: i + 1,
+                        stars: _profile.getStageStars('stage_${i + 1}'),
+                        unlocked: i + 1 <= unlocked,
+                        onTap: i + 1 <= unlocked ? () => _launch('stage_${i + 1}') : null,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           );
         },
       ),
@@ -108,74 +117,52 @@ class _StageNode extends StatelessWidget {
     required this.stars,
     required this.unlocked,
     required this.onTap,
-    required this.cardDark,
-    required this.gold,
-    required this.primaryBlue,
-    required this.locked,
-    required this.textDim,
   });
 
   final int stageNum;
   final int stars;
   final bool unlocked;
   final VoidCallback? onTap;
-  final Color cardDark, gold, primaryBlue, locked, textDim;
+
+  static const _gold = Color(0xFFFFD133);
 
   @override
   Widget build(BuildContext context) {
+    final badge = stars > 0
+        ? 'assets/campaign/CampaignNodeComplete_v1.png'
+        : unlocked
+            ? 'assets/campaign/CampaignNodeCurrent_v1.png'
+            : 'assets/campaign/CampaignNodeLocked_v1.png';
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: unlocked ? cardDark : locked,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: unlocked ? primaryBlue.withValues(alpha: 0.6) : Colors.white12,
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 52,
-              height: 52,
-              child: Image.asset(
-                stars > 0
-                    ? 'assets/campaign/CampaignNodeComplete_v1.png'
-                    : unlocked
-                        ? 'assets/campaign/CampaignNodeCurrent_v1.png'
-                        : 'assets/campaign/CampaignNodeLocked_v1.png',
-                fit: BoxFit.contain,
-              ),
+      child: Column(
+        children: [
+          SizedBox(width: 68, height: 68, child: Image.asset(badge, fit: BoxFit.contain)),
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'STAGE $stageNum',
-                    style: TextStyle(
-                      color: unlocked ? Colors.white : textDim,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+            child: Column(
+              children: [
+                Text('STAGE $stageNum',
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                if (unlocked)
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: List.generate(
                       3,
                       (i) => Icon(Icons.star,
-                          size: 16, color: i < stars ? gold : Colors.white24),
+                          size: 10, color: i < stars ? _gold : Colors.white24),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
-            if (unlocked) const Icon(Icons.chevron_right, color: Colors.white54),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -147,8 +147,14 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       ),
     );
 
+    final groundImg = await StructureImage.load('assets/ground/stage1_ground.jpg');
     add(BackgroundRenderer(size: size));
-    add(GroundRenderer(projection: projection, origin: origin, laneHalf: Mob.laneHalf));
+    add(GroundRenderer(
+      projection: projection,
+      origin: origin,
+      laneHalf: Mob.laneHalf,
+      groundImage: groundImg,
+    ));
     scene = BattleSceneRenderer(
       round: round,
       atlas: atlas,
