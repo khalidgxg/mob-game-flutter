@@ -1,8 +1,12 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:mobrush_data/mobrush_data.dart';
+import 'package:mobrush_save/mobrush_save.dart';
+import 'package:mobrush_sim/mobrush_sim.dart';
 
 import 'battle_game.dart';
 import 'home_screen.dart';
+import 'profile_service.dart';
 import 'stage1_game.dart';
 import 'structure_preview_game.dart';
 
@@ -212,14 +216,81 @@ class _TelemetryState extends State<_Telemetry> {
 /// finished frame — and filling the rest of the screen is later polish
 /// work, not a Phase 4 gate item.
 class Stage1Screen extends StatefulWidget {
-  const Stage1Screen({super.key});
+  const Stage1Screen({super.key, this.profile, this.profileService, this.stageId = 'stage_1'});
+
+  /// When supplied (Home always supplies one), a win/lose ends the round
+  /// with `GameOverScreen.cs`'s reward-and-return flow: `RewardCalculator`
+  /// and `StarRating` compute the payout the same way the live game does,
+  /// the profile is updated and persisted, and the result is popped back
+  /// to whoever pushed this screen. Left null for the raw scene-picker
+  /// entry point, which has no profile to update.
+  final PlayerProfile? profile;
+  final ProfileService? profileService;
+  final String stageId;
 
   @override
   State<Stage1Screen> createState() => _Stage1ScreenState();
 }
 
 class _Stage1ScreenState extends State<Stage1Screen> {
-  late final Stage1Game _game = Stage1Game();
+  late final Stage1Game _game = Stage1Game()..onOutcome = _handleOutcome;
+
+  static const _baseCoins = 50;
+  static const _parSeconds = 90.0;
+
+  Future<void> _handleOutcome(RoundOutcome outcome) async {
+    final profile = widget.profile;
+    RoundReward? reward;
+    if (outcome == RoundOutcome.win && profile != null) {
+      final stars = StarRating.evaluate(
+        baseHealthFraction: _game.round.base.healthFraction,
+        elapsedSeconds: _game.elapsedSeconds,
+        parSeconds: _parSeconds,
+      );
+      final previousStars = profile.getStageStars(widget.stageId);
+      final firstWinOfDay = profile.lastWinDayUtc != PlayerProfile.todayUtc();
+      reward = RewardCalculator.compute(
+        baseCoins: _baseCoins,
+        stars: stars,
+        previousStars: previousStars,
+        firstWinOfDay: firstWinOfDay,
+      );
+      profile.currency += reward.coins;
+      profile.setStageStars(widget.stageId, reward.stars);
+      profile.lastWinDayUtc = PlayerProfile.todayUtc();
+      await widget.profileService?.save(profile);
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0D1523),
+        title: Text(
+          outcome == RoundOutcome.win ? 'VICTORY!' : 'DEFEAT',
+          style: TextStyle(
+            color: outcome == RoundOutcome.win ? const Color(0xFF29B863) : const Color(0xFFE0554A),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        content: reward == null
+            ? const Text('The enemy reached your base.', style: TextStyle(color: Colors.white70))
+            : Text(
+                '+${reward.coins} coins  ·  ${reward.stars} ${reward.stars == 1 ? 'star' : 'stars'}'
+                '${reward.firstClear ? '\nFirst clear!' : ''}',
+                style: const TextStyle(color: Colors.white),
+              ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('HOME'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop(profile);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -227,6 +298,14 @@ class _Stage1ScreenState extends State<Stage1Screen> {
       body: Stack(
         children: [
           GameWidget(game: _game),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).maybePop(widget.profile),
+            ),
+          ),
           Positioned(
             top: 48,
             left: 16,

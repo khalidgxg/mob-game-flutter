@@ -16,6 +16,7 @@ dependencies:
     path: ../../packages/mobrush_data
   mobrush_save:
     path: ../../packages/mobrush_save
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

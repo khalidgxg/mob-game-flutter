@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobrush_save/mobrush_save.dart';
 
+import 'campaign_map_screen.dart';
 import 'main.dart' show Stage1Screen;
+import 'profile_service.dart';
 
 /// Port of `HomeMenu.cs` (708 lines of hand-anchored `RectTransform` code) —
 /// same five bands top to bottom (header, title, campaign hero, BATTLE CTA,
@@ -12,15 +14,19 @@ import 'main.dart' show Stage1Screen;
 /// 572, play 97, nav 118, out of ~1000 — see `HomeMenu`'s `NavTop`/`PlayTop`/
 /// `HeroTop`/`TitleTop`/`HeaderTop` constants this mirrors).
 ///
-/// Not yet done: no real persistence — the profile here is a fresh
-/// in-memory `PlayerProfile`, not loaded from device storage the way
-/// `ProfileService` does in the live game. Settings modal, secret-code
-/// panel, and How To Play are also not ported yet; SHOP and MAP tabs are
-/// stubs. Home's own generated art (castle hero, wordmark, icon set) isn't
-/// baked yet either — this reuses Stage 1's real castle PNG and Material
-/// icons as the honest placeholder, the same "geometric fallback" spirit
-/// `HomeMenu.BuildCastleArt` uses when `Resources/Home/CastleHero` is
-/// missing.
+/// Real persistence: `profile` is loaded from `SharedPreferences` through
+/// `ProfileService` (the Flutter equivalent of `LocalJsonSaveStore.cs`) on
+/// first build, and saved back after every round (see `Stage1Screen`'s
+/// `_handleOutcome`, which computes the reward with the same
+/// `RewardCalculator`/`StarRating` the live game uses).
+///
+/// Not yet done: Settings modal, secret-code panel, and How To Play are a
+/// single placeholder dialog, not ported from `HomeMenu.cs`. SHOP and MAP
+/// tabs are stubs. Home's own generated art (castle hero, wordmark, icon
+/// set) isn't baked yet either — this reuses Stage 1's real castle PNG and
+/// Material icons as the honest placeholder, the same "geometric fallback"
+/// spirit `HomeMenu.BuildCastleArt` uses when `Resources/Home/CastleHero`
+/// is missing.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -29,7 +35,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PlayerProfile _profile = PlayerProfile();
+  final ProfileService _service = ProfileService();
+  PlayerProfile? _profile;
+
+  /// Non-null accessor for the widgets below, which only ever get built
+  /// once `build()` has confirmed `_profile` finished loading.
+  PlayerProfile get profile => _profile!;
+
+  @override
+  void initState() {
+    super.initState();
+    _service.load().then((p) {
+      if (mounted) setState(() => _profile = p);
+    });
+  }
 
   static const _bgNavy = Color(0xFF000B20);
   static const _titleBlue = Color(0xFF73C7FF);
@@ -44,10 +63,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int get _totalStages => 3; // Stage 1-3 content authored so far.
   int get _completedStages =>
-      _profile.stageStars.where((e) => e.stars > 0).length;
+      profile.stageStars.where((e) => e.stars > 0).length;
 
   @override
   Widget build(BuildContext context) {
+    if (_profile == null) {
+      return const Scaffold(
+        backgroundColor: _bgNavy,
+        body: Center(child: CircularProgressIndicator(color: _titleBlue)),
+      );
+    }
     return Scaffold(
       backgroundColor: _bgNavy,
       body: SafeArea(
@@ -103,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: _headerBorder),
                   ),
-                  child: Text('LV ${_profile.playerLevel}',
+                  child: Text('LV ${profile.playerLevel}',
                       style: const TextStyle(color: Colors.white, fontSize: 10)),
                 ),
               ],
@@ -111,9 +136,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Expanded(flex: 20, child: _currencyChip(_profile.currency.toString(), _gold, Icons.circle)),
+        Expanded(flex: 20, child: _currencyChip(profile.currency.toString(), _gold, Icons.circle)),
         const SizedBox(width: 6),
-        Expanded(flex: 20, child: _currencyChip(_profile.gems.toString(), _diamond, Icons.diamond)),
+        Expanded(flex: 20, child: _currencyChip(profile.gems.toString(), _diamond, Icons.diamond)),
         const SizedBox(width: 6),
         Expanded(
           flex: 14,
@@ -164,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCampaignHero() {
     final currentStage = (_completedStages + 1).clamp(1, _totalStages);
-    final currentStageStars = _profile.getStageStars('stage_$currentStage');
+    final currentStageStars = profile.getStageStars('stage_$currentStage');
     return Container(
       decoration: BoxDecoration(
         color: _cardDark,
@@ -282,18 +307,31 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case _NavTab.battle:
         _startBattle();
-      case _NavTab.shop:
       case _NavTab.map:
+        _openMap();
+      case _NavTab.shop:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Not built yet — Phase 5 follow-up.')),
+          const SnackBar(content: Text('Shop not built yet — Phase 5 follow-up.')),
         );
     }
   }
 
-  void _startBattle() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const Stage1Screen()),
+  Future<void> _openMap() async {
+    final result = await Navigator.of(context).push<PlayerProfile>(
+      MaterialPageRoute(
+        builder: (_) => CampaignMapScreen(profile: profile, profileService: _service),
+      ),
     );
+    if (result != null && mounted) setState(() => _profile = result);
+  }
+
+  Future<void> _startBattle() async {
+    final result = await Navigator.of(context).push<PlayerProfile>(
+      MaterialPageRoute(
+        builder: (_) => Stage1Screen(profile: profile, profileService: _service),
+      ),
+    );
+    if (result != null && mounted) setState(() => _profile = result);
   }
 
   void _showSettings() {

@@ -43,6 +43,13 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
   double _aimX = 0, _aimZ = -1;
   bool _firing = false;
 
+  double elapsedSeconds = 0;
+
+  /// Fires exactly once, the first time `round.outcome` leaves `ongoing` —
+  /// the trigger `GameOverScreen.Show` responds to in the live game.
+  void Function(RoundOutcome outcome)? onOutcome;
+  bool _outcomeReported = false;
+
   @override
   Future<void> onLoad() async {
     atlas = await CharacterAtlas.load();
@@ -220,6 +227,12 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
     sw.stop();
     simMs = sw.elapsedMicroseconds / 1000.0;
     scene.advanceClock(dt);
+    elapsedSeconds += dt;
+
+    if (!_outcomeReported && round.outcome != RoundOutcome.ongoing) {
+      _outcomeReported = true;
+      onOutcome?.call(round.outcome);
+    }
 
     _frameSamples.add(total);
     if (_frameSamples.length > 90) _frameSamples.removeAt(0);
