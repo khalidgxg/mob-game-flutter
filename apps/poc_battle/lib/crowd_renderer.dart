@@ -86,7 +86,7 @@ class CrowdRenderer extends Component {
       final m = mobs[i];
       if (m.dead) continue;
 
-      final character = m.index % CharacterAtlas.characters.length;
+      final character = m.index % atlas.characterIds.length;
       final fighting = m.combatTarget != null;
 
       // A per-mob phase offset derived from its stable index — no random

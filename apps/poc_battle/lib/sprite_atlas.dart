@@ -27,7 +27,9 @@ class CharacterAtlas {
     this.frameHeight, {
     this.isRealBake = false,
     Map<String, _ClipRange>? clipRanges,
-  }) : _clipRanges = clipRanges ?? const {};
+    List<String>? characterIds,
+  })  : _clipRanges = clipRanges ?? const {},
+        characterIds = characterIds ?? characters;
 
   final ui.Image image;
 
@@ -46,11 +48,20 @@ class CharacterAtlas {
 
   final Map<String, _ClipRange> _clipRanges;
 
+  /// Character ids actually present on this atlas, in bake order. For the
+  /// placeholder this is [characters]; for a real bake it comes from the
+  /// export manifest instead — the live catalog's ids
+  /// (`reno-stage2`, `max-player`, ...) do not match the placeholder's
+  /// illustrative names, and indexing into the wrong list would silently
+  /// draw one character's clip using another's frame count.
+  final List<String> characterIds;
+
   static const int runFrames = 16;
   static const int attackFrames = 8;
   static const int framesPerCharacter = runFrames + attackFrames;
 
-  /// Matches the six authored characters in `Assets/Resources/Characters`.
+  /// Illustrative ids for the procedural placeholder only. A real bake's ids
+  /// come from [characterIds], populated from the export manifest.
   static const List<String> characters = [
     'base',
     'base_enemy',
@@ -61,13 +72,13 @@ class CharacterAtlas {
   ];
 
   int runFrame(int character, int frame) {
-    final range = _clipRanges['${characters[character]}/run'];
+    final range = _clipRanges['${characterIds[character]}/run'];
     if (range != null) return range.start + frame % range.length;
     return character * framesPerCharacter + (frame % runFrames);
   }
 
   int attackFrame(int character, int frame) {
-    final range = _clipRanges['${characters[character]}/attack'];
+    final range = _clipRanges['${characterIds[character]}/attack'];
     if (range != null) return range.start + frame % range.length;
     return character * framesPerCharacter + runFrames + (frame % attackFrames);
   }
@@ -100,11 +111,15 @@ class CharacterAtlas {
 
     final rects = <ui.Rect>[];
     final ranges = <String, _ClipRange>{};
+    final ids = <String>[];
     final rawFrames = (manifest['frames'] as List).cast<Map<String, dynamic>>();
 
     // The baker writes frames in character-then-clip order, so grouping by
     // (characterId, clip) recovers contiguous ranges without needing the
-    // export to declare them explicitly.
+    // export to declare them explicitly. The same walk collects each
+    // character id once, in first-seen order — the index CrowdRenderer
+    // assigns per mob (`m.index % characterIds.length`) has to line up with
+    // this exact ordering or a mob draws with another character's clip.
     String? currentKey;
     var rangeStart = 0;
     for (var i = 0; i < rawFrames.length; i++) {
@@ -117,7 +132,11 @@ class CharacterAtlas {
           (f['h'] as num).toDouble(),
         ),
       );
-      final key = '${f['characterId']}/${f['clip']}';
+      final characterId = f['characterId'] as String;
+      if (ids.isEmpty || ids.last != characterId) {
+        if (!ids.contains(characterId)) ids.add(characterId);
+      }
+      final key = '$characterId/${f['clip']}';
       if (key != currentKey) {
         currentKey = key;
         rangeStart = i;
@@ -133,6 +152,7 @@ class CharacterAtlas {
       tile,
       isRealBake: true,
       clipRanges: ranges,
+      characterIds: ids,
     );
   }
 
