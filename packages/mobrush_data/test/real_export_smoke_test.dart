@@ -45,20 +45,38 @@ void main() {
     }
   });
 
-  test(
-    'this fixture predates the CannonLibrary export fix -- cannons is empty '
-    'here on purpose, not proof the exporter is still broken',
-    () {
-      // ContentExporter.cs originally read only GameConfig.cannonCatalog,
-      // which this project leaves empty: every cannon ("cannon", "heavy") is
-      // built by CannonLibrary.BuildSpecs() at runtime and never saved as a
-      // catalog asset. The exporter now also reads CannonLibrary.All,
-      // mirroring Game.GetAllCannons()'s exact precedence. This fixture was
-      // captured before that fix, so it still shows the old zero-cannon
-      // output -- replace it with a fresh export to verify the fix for real.
-      expect(catalog.cannons, isEmpty);
-    },
-  );
+  group('the CannonLibrary export fix is confirmed against a re-export', () {
+    test('both code-authored cannons are present', () {
+      expect(catalog.cannons.map((c) => c.id), containsAll(['cannon', 'heavy']));
+    });
+
+    test('standard cannon base stats match CannonLibrary.BuildSpecs() row 0', () {
+      final cannon = catalog.cannon('cannon')!;
+      expect(cannon.ammoCapacity, equals(130));
+      expect(cannon.rushUnitCount, equals(3));
+      expect(cannon.fireRate, closeTo(0.045, 1e-6));
+    });
+
+    test('purchasing level 1 applies the exact delta between rows 0 and 1', () {
+      final cannon = catalog.cannon('cannon')!;
+      final s = cannon.statsAtLevel(1);
+      // BuildSpecs() row 1 is absolute (ammo 138, energy 110); the exporter
+      // stores the delta from row 0, and statsAtLevel adds it back on -- so
+      // this also checks the export's delta encoding round-trips correctly.
+      expect(s.ammoCapacity, equals(138));
+      expect(s.energyCapacity, closeTo(110.0, 1e-6));
+      expect(s.playerHealthBonus, equals(35));
+    });
+
+    test('statsAtLevel resolves for every authored level of every cannon', () {
+      for (final c in catalog.cannons) {
+        for (var lvl = 0; lvl <= c.levels.length; lvl++) {
+          final s = c.statsAtLevel(lvl);
+          expect(s.ammoCapacity, greaterThan(0), reason: '${c.id} at level $lvl');
+        }
+      }
+    });
+  });
 
   test('reward rules load with the live authored values', () {
     // Live values differ from this package's defaults (starBonusRate: 0,

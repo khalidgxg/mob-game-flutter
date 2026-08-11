@@ -120,18 +120,26 @@ the same verdicts Unity's `ContentValidatorMenu` gives today.
 
 **Progress:** `ContentExporter.cs`, `mobrush_data` (characters, cannons,
 `RewardRules`/`RewardCalculator`/`StarRating`) and `mobrush_save`
-(`PlayerProfile`, full accessor surface) are committed with 45 passing tests.
-The round-trip is now confirmed against **real exported content**, not just
-the hand-authored fixture: `MobRush ▸ Export Content for Flutter` was run in
-the live Editor, its `content.json` (8 characters, real authored stat lines
-up to 5 purchased levels, live `RewardRules`) was committed as a second test
-fixture, and `real_export_smoke_test.dart` parses it and resolves
-`statsAtLevel` for every authored level of every character. One live finding
-from that run: `GameConfig.cannonCatalog` is currently empty — cannons in
-this project are built by `CannonLibrary.cs` at some other point in the
-pipeline rather than authored directly into the catalog asset the exporter
-reads, so `mobrush_data`'s cannon math is verified against the hand-authored
-fixture only until that's wired up or otherwise clarified.
+(`PlayerProfile`, full accessor surface) are committed with 46 passing tests
+across the two packages (56 including `mobrush_sim` from Phase 0).
+The round-trip is confirmed against **real exported content**, characters and
+cannons both: `MobRush ▸ Export Content for Flutter` was run in the live
+Editor, its `content.json` was committed as a second test fixture, and
+`real_export_smoke_test.dart` parses it and resolves `statsAtLevel` for every
+authored level of every character and every cannon.
+
+The cannon side took two passes. The first export produced zero cannons —
+not a bug in the project, but in the exporter: this game builds its cannons
+entirely in code (`CannonLibrary.BuildSpecs()`), as runtime-only
+`ScriptableObject` instances (`HideFlags.HideAndDontSave`) that never touch
+`GameConfig.cannonCatalog`, which is all the exporter originally read.
+Fixed by also reading `CannonLibrary.All`, mirroring
+`Game.GetAllCannons()`'s exact precedence (library wins on a colliding id,
+catalog fills in anything the library doesn't define). A re-export after the
+fix carries both authored cannons ("cannon", "heavy") with their full level
+tables, and the smoke test checks the level-1 stat delta against
+`CannonLibrary.BuildSpecs()`'s own rows to confirm the export's
+absolute-row-to-delta encoding round-trips correctly.
 
 **Not yet done:** `StageDefinition`, `AbilityDefinition`,
 `CharacterProgression`, `StagePresentationProfile`, and the 664-line
