@@ -76,38 +76,44 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Expanded(
-          flex: 40,
+          flex: 50,
           child: _framedPanel(
             color: _chipDark,
             border: _headerBorder,
             child: Row(
               children: [
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _squareIcon(Icons.shield, const Color(0xFF33AAFF), const Color(0xFF0B2B64)),
-                const SizedBox(width: 10),
+                const SizedBox(width: 6),
                 const Expanded(
-                  child: Text('COMMANDER',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  child: Text(
+                    'COMMANDER',
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.fade,
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
                 ),
+                const SizedBox(width: 4),
                 Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D59D1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: _headerBorder),
                   ),
                   child: Text('LV ${_profile.playerLevel}',
-                      style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      style: const TextStyle(color: Colors.white, fontSize: 10)),
                 ),
               ],
             ),
           ),
         ),
         const SizedBox(width: 6),
-        Expanded(flex: 22, child: _currencyChip(_profile.currency.toString(), _gold, Icons.circle)),
+        Expanded(flex: 20, child: _currencyChip(_profile.currency.toString(), _gold, Icons.circle)),
         const SizedBox(width: 6),
-        Expanded(flex: 22, child: _currencyChip(_profile.gems.toString(), _diamond, Icons.diamond)),
+        Expanded(flex: 20, child: _currencyChip(_profile.gems.toString(), _diamond, Icons.diamond)),
         const SizedBox(width: 6),
         Expanded(
           flex: 14,

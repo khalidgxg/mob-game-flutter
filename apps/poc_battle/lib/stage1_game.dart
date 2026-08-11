@@ -6,6 +6,7 @@ import 'package:flame/game.dart';
 import 'package:mobrush_data/mobrush_data.dart';
 import 'package:mobrush_sim/mobrush_sim.dart';
 
+import 'background_renderer.dart';
 import 'battle_scene_renderer.dart';
 import 'ground_renderer.dart';
 import 'iso.dart';
@@ -130,6 +131,7 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       ),
     );
 
+    add(BackgroundRenderer(size: size));
     add(GroundRenderer(projection: projection, origin: origin, laneHalf: Mob.laneHalf));
     scene = BattleSceneRenderer(
       round: round,
