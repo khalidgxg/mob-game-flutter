@@ -31,3 +31,6 @@ flutter:
     - assets/structures/stage2/
     - assets/structures/stage3/
     - assets/structures/gate/
+    - assets/home/
+    - assets/home/icons/
+    - assets/campaign/

@@ -20,13 +20,17 @@ import 'profile_service.dart';
 /// `_handleOutcome`, which computes the reward with the same
 /// `RewardCalculator`/`StarRating` the live game uses).
 ///
+/// Real art: `CastleHero.png`, `LogoWordmark.png`, and the header/nav icon
+/// set are copied straight from `Assets/Resources/Home/` — the same
+/// approved assets `HomeMenu.BuildCastleArt`/`BuildTitle` load in the live
+/// game, not placeholders. Reusing an already-approved project asset is
+/// the fal.ai policy's first priority, ahead of generating anything new.
+///
 /// Not yet done: Settings modal, secret-code panel, and How To Play are a
-/// single placeholder dialog, not ported from `HomeMenu.cs`. SHOP and MAP
-/// tabs are stubs. Home's own generated art (castle hero, wordmark, icon
-/// set) isn't baked yet either — this reuses Stage 1's real castle PNG and
-/// Material icons as the honest placeholder, the same "geometric fallback"
-/// spirit `HomeMenu.BuildCastleArt` uses when `Resources/Home/CastleHero`
-/// is missing.
+/// single placeholder dialog, not ported from `HomeMenu.cs`. SHOP tab is a
+/// stub — it needs a real character/cannon/ability catalog exported from
+/// Unity (`ContentExporter.cs`'s `content.json`) before it can show
+/// anything but fabricated numbers.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -53,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _bgNavy = Color(0xFF000B20);
   static const _titleBlue = Color(0xFF73C7FF);
   static const _gold = Color(0xFFFFD133);
-  static const _diamond = Color(0xFF59C7FF);
   static const _playGold = Color(0xFFFFA815);
   static const _chipDark = Color(0xF0061229);
   static const _cardDark = Color(0xF2051129);
@@ -108,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 const SizedBox(width: 6),
-                _squareIcon(Icons.shield, const Color(0xFF33AAFF), const Color(0xFF0B2B64)),
+                _assetIcon('assets/home/icons/icon_helmet.png'),
                 const SizedBox(width: 6),
                 const Expanded(
                   child: Text(
@@ -136,9 +139,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Expanded(flex: 20, child: _currencyChip(profile.currency.toString(), _gold, Icons.circle)),
+        Expanded(flex: 20, child: _currencyChip(profile.currency.toString(), 'assets/home/icons/icon_coin.png')),
         const SizedBox(width: 6),
-        Expanded(flex: 20, child: _currencyChip(profile.gems.toString(), _diamond, Icons.diamond)),
+        Expanded(flex: 20, child: _currencyChip(profile.gems.toString(), 'assets/home/icons/icon_gem.png')),
         const SizedBox(width: 6),
         Expanded(
           flex: 14,
@@ -146,21 +149,21 @@ class _HomeScreenState extends State<HomeScreen> {
             color: const Color(0xFF091933),
             border: _headerBorder,
             onTap: _showSettings,
-            child: const Center(child: Icon(Icons.settings, color: Colors.white, size: 22)),
+            child: Center(child: Image.asset('assets/home/icons/icon_gear.png', width: 26, height: 26)),
           ),
         ),
       ],
     );
   }
 
-  Widget _currencyChip(String value, Color accent, IconData icon) {
+  Widget _currencyChip(String value, String iconAsset) {
     return _framedPanel(
       color: _chipDark,
       border: _headerBorder,
       child: Row(
         children: [
           const SizedBox(width: 8),
-          Icon(icon, color: accent, size: 18),
+          Image.asset(iconAsset, width: 20, height: 20),
           const SizedBox(width: 6),
           Expanded(
             child: Text(value,
@@ -174,14 +177,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- Title ----------------------------------------------------------------
 
   Widget _buildTitle() {
-    return const Center(
-      child: Text.rich(
-        TextSpan(children: [
-          TextSpan(text: 'MOB ', style: TextStyle(color: Colors.white)),
-          TextSpan(text: 'RUSH', style: TextStyle(color: _titleBlue)),
-        ]),
-        style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: 1),
-      ),
+    return Center(
+      child: Image.asset('assets/home/LogoWordmark.png', fit: BoxFit.contain),
     );
   }
 
@@ -202,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
-                'assets/structures/stage1/castle_main.png',
+                'assets/home/CastleHero.png',
                 fit: BoxFit.contain,
               ),
             ),
@@ -237,12 +234,12 @@ class _HomeScreenState extends State<HomeScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         onPressed: _startBattle,
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.gps_fixed, color: Colors.white, size: 28),
-            SizedBox(width: 10),
-            Text('BATTLE',
+            Image.asset('assets/home/icons/icon_battle_cta.png', width: 30, height: 30),
+            const SizedBox(width: 10),
+            const Text('BATTLE',
                 style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
           ],
         ),
@@ -254,10 +251,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNav() {
     final items = [
-      (_NavTab.home, Icons.home, 'HOME'),
-      (_NavTab.battle, Icons.gps_fixed, 'BATTLE'),
-      (_NavTab.shop, Icons.storefront, 'SHOP'),
-      (_NavTab.map, Icons.map, 'MAP'),
+      (_NavTab.home, 'assets/home/icons/icon_home.png', 'HOME'),
+      (_NavTab.battle, 'assets/home/icons/icon_battle.png', 'BATTLE'),
+      (_NavTab.shop, 'assets/home/icons/icon_shop.png', 'SHOP'),
+      (_NavTab.map, 'assets/home/icons/icon_map.png', 'MAP'),
     ];
     return Container(
       decoration: BoxDecoration(
@@ -284,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(item.$2, color: active ? Colors.white : const Color(0xFF8CA3CC), size: 24),
+                    Image.asset(item.$2, width: 26, height: 26),
                     const SizedBox(height: 2),
                     Text(item.$3,
                         style: TextStyle(
@@ -373,12 +370,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(onTap: onTap, child: panel);
   }
 
-  Widget _squareIcon(IconData icon, Color fg, Color bg) {
+  Widget _assetIcon(String asset) {
     return Container(
       width: 34,
       height: 34,
-      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-      child: Icon(icon, color: fg, size: 20),
+      decoration: const BoxDecoration(color: Color(0xFF0B2B64), shape: BoxShape.circle),
+      padding: const EdgeInsets.all(6),
+      child: Image.asset(asset),
     );
   }
 }

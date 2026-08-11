@@ -6,11 +6,14 @@ import 'profile_service.dart';
 
 /// Simplified port of `CampaignMapScreen.cs`. The C# version scrolls one
 /// continuous hand-authored atlas image per three-stage group with node
-/// positions read off `CampaignAtlasDefinition`'s normalized anchors; no
-/// campaign atlas art has been baked for Flutter yet, so this is a plain
-/// scrollable list of stage cards instead — same information (lock state,
-/// stars, launch), honestly simpler presentation. Swapping in the real
-/// atlas later is exactly the `Stack` + `Align(FractionalOffset)` port the
+/// positions read off `CampaignAtlasDefinition`'s normalized anchors — that
+/// illustrated background (the jungle/desert path art) isn't in this repo's
+/// `Assets/Resources`, only the three real node-state badges are
+/// (`CampaignNodeComplete/Current/Locked_v1.png`, used below), so this is a
+/// plain scrollable list of stage cards instead of the real atlas —
+/// same information (lock state, stars, launch), honestly simpler
+/// presentation. Swapping in the real atlas once that background art
+/// exists is exactly the `Stack` + `Align(FractionalOffset)` port the
 /// migration plan already calls for; nothing here blocks that.
 ///
 /// Only Stage 1 has real authored battle content in this app (see
@@ -134,19 +137,16 @@ class _StageNode extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 52,
               height: 52,
-              decoration: BoxDecoration(
-                color: unlocked ? primaryBlue : Colors.white10,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: unlocked
-                    ? Text('$stageNum',
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900))
-                    : const Icon(Icons.lock, color: Colors.white38, size: 22),
+              child: Image.asset(
+                stars > 0
+                    ? 'assets/campaign/CampaignNodeComplete_v1.png'
+                    : unlocked
+                        ? 'assets/campaign/CampaignNodeCurrent_v1.png'
+                        : 'assets/campaign/CampaignNodeLocked_v1.png',
+                fit: BoxFit.contain,
               ),
             ),
             const SizedBox(width: 16),
