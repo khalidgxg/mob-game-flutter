@@ -15,7 +15,15 @@ const _recruit = CharacterDefinition(
   crowdSeparationRadius: 0,
   baseStats: MobStats(hp: 20, atk: 6, def: 2, speed: 1.5, attackSpeed: 1.6, seekRange: 4.5),
   launchEnergyCost: 14,
-  levels: [],
+  // Real level-1 row from the exported content.json, so the levelled-stats
+  // group below asserts against authored numbers rather than invented ones.
+  levels: [
+    CharacterLevelDefinition(
+      stats: MobStats(hp: 23, atk: 7, def: 2, speed: 1.5, attackSpeed: 1.6, seekRange: 4.5),
+      unlockCost: 100,
+      requiredStageIndex: -1,
+    ),
+  ],
   unlockCost: 0,
   unlockRequiredStage: -1,
   unlockAfterStageId: '',
@@ -46,7 +54,11 @@ const _content = ContentCatalog(
   rewardRules: RewardRules(),
 );
 
-BattleRound _round({double startingEnergy = 100, String selectedCharacterId = 'base'}) {
+BattleRound _round({
+  double startingEnergy = 100,
+  String selectedCharacterId = 'base',
+  Map<String, int>? characterLevels,
+}) {
   return BattleRound(
     content: _content,
     towers: [
@@ -64,10 +76,13 @@ BattleRound _round({double startingEnergy = 100, String selectedCharacterId = 'b
       selectedCharacterId: selectedCharacterId,
     ),
     maxMobs: 350,
+    characterLevels: characterLevels,
   );
 }
 
 void main() {
+  _levelledStatsGroup();
+
   group('tryRush', () {
     test('spends rushUnitCount x launchEnergyCost and spawns that many player mobs', () {
       final round = _round();
@@ -101,6 +116,33 @@ void main() {
       expect(ok, isTrue);
       expect(round.abilities.energy, 0);
       expect(round.livePlayerMobCount, 2);
+    });
+  });
+}
+
+/// A purchased character level has to change what actually walks onto the
+/// lane, or the shop is cosmetic. `Recruit` level 1 is authored at hp 23 /
+/// atk 7 in the real `content.json`, against base hp 20 / atk 6.
+void _levelledStatsGroup() {
+  group('characterLevels', () {
+    test('level 0 (or absent) spawns the authored base row', () {
+      final round = _round();
+      final mob = round.spawnMob(0, 'base', x: 0, y: 0.5, z: 0)!;
+      expect(mob.maxHp, 20);
+      expect(mob.atk, 6);
+    });
+
+    test('a purchased level spawns that level row instead', () {
+      final round = _round(characterLevels: {'base': 1});
+      final mob = round.spawnMob(0, 'base', x: 0, y: 0.5, z: 0)!;
+      expect(mob.maxHp, 23);
+      expect(mob.atk, 7);
+    });
+
+    test('the level applies to rush deployments too, not just the cannon', () {
+      final round = _round(characterLevels: {'base': 1});
+      expect(round.tryRush(rushUnitCount: 2, formationZ: 5.6), isTrue);
+      expect(round.mobs.every((m) => m.maxHp == 23), isTrue);
     });
   });
 }

@@ -8,6 +8,7 @@ import 'campaign_map_screen.dart';
 import 'main.dart' show Stage1Screen;
 import 'profile_service.dart';
 import 'shop_screen.dart';
+import 'ui_theme.dart';
 
 /// Port of `HomeMenu.cs` (708 lines of hand-anchored `RectTransform` code) —
 /// same five bands top to bottom (header, title, campaign hero, BATTLE CTA,
@@ -30,11 +31,12 @@ import 'shop_screen.dart';
 /// game, not placeholders. Reusing an already-approved project asset is
 /// the fal.ai policy's first priority, ahead of generating anything new.
 ///
-/// Not yet done: Settings modal, secret-code panel, and How To Play are a
-/// single placeholder dialog, not ported from `HomeMenu.cs`. SHOP tab is a
-/// stub — it needs a real character/cannon/ability catalog exported from
-/// Unity (`ContentExporter.cs`'s `content.json`) before it can show
-/// anything but fabricated numbers.
+/// Chrome comes from `ui_theme.dart`, shared with Shop and the battle HUD
+/// so the three screens cannot drift into looking like three apps.
+///
+/// Not yet done: the settings modal is a single placeholder dialog —
+/// `HomeMenu.cs`'s sound toggle, How To Play, and secret-code panel aren't
+/// ported.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -58,44 +60,24 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Palette read off the approved Home reference: a deep navy ground with a
-  // cool radial glow behind the castle, gold-edged chrome on every frame,
-  // and one saturated gold CTA. Gold borders are the reference's single
-  // strongest signature -- the earlier version's flat blue-grey outlines are
-  // what made it read as a wireframe rather than the finished screen.
-  // Palette read off the approved reference. The two things that make that
-  // screen read as finished rather than as a wireframe are (a) every panel
-  // is *translucent glass* over the backdrop -- a blue-tinted gradient with
-  // a bright hairline along its top edge -- not a solid fill, and (b) the
-  // selected element carries its own light. Both are modelled below.
-  static const _bgCore = Color(0xFF17407E); // glow behind the castle
-  static const _bgNavy = Color(0xFF0A2251);
-  static const _bgDeep = Color(0xFF04102C);
-  static const _titleBlue = Color(0xFF73C7FF);
-  static const _gold = Color(0xFFFFC53D);
-  static const _goldBright = Color(0xFFFFE071);
-  static const _goldDeep = Color(0xFFE08A00);
-  static const _goldEdge = Color(0xFFD9A22B);
-  static const _navActive = Color(0xFF2E86F5);
-  static const _navActiveDeep = Color(0xFF1560D0);
-  static const _plusGreen = Color(0xFF2FBF4A);
+  // Local aliases onto the shared palette, kept so the layout code below
+  // reads the same as it did before the theme was extracted.
+  static const _bgCore = MobRushTheme.bgCore;
+  static const _bgNavy = MobRushTheme.bgNavy;
+  static const _bgDeep = MobRushTheme.bgDeep;
+  static const _titleBlue = MobRushTheme.blueLight;
+  static const _gold = MobRushTheme.gold;
+  static const _goldBright = MobRushTheme.goldBright;
+  static const _goldDeep = MobRushTheme.goldDeep;
+  static const _goldEdge = MobRushTheme.goldEdge;
+  static const _plusGreen = MobRushTheme.green;
 
   /// Translucent blue glass, brighter at the top — the fill every framed
   /// panel in the reference uses.
-  static const _glassFill = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0x59FFFFFF), Color(0x4D3D82D6), Color(0x59071B3F), Color(0x73030D24)],
-    stops: [0.0, 0.035, 0.55, 1.0],
-  );
+  static const _glassFill = MobRushTheme.glassFill;
 
   /// The same glass, lit from within — used by the active nav tab.
-  static const _glassActive = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0x8CFFFFFF), Color(0xFF4E9BFF), _navActive, _navActiveDeep],
-    stops: [0.0, 0.05, 0.5, 1.0],
-  );
+  static const _glassActive = MobRushTheme.glassActive;
 
   int get _totalStages => 3; // Stage 1-3 content authored so far.
   int get _completedStages =>

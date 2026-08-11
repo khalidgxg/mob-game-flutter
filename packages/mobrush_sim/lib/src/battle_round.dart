@@ -34,7 +34,9 @@ class BattleRound {
     required this.abilities,
     List<Gate>? gates,
     int maxMobs = 350,
+    Map<String, int>? characterLevels,
   })  : gates = gates ?? [],
+        characterLevels = characterLevels ?? const {},
         _maxMobs = maxMobs;
 
   final ContentCatalog content;
@@ -43,6 +45,12 @@ class BattleRound {
   final Cannon cannon;
   final BattleAbilities abilities;
   final List<Gate> gates;
+
+  /// Purchased level per character id, as `PlayerProfile.getCharacterLevel`
+  /// reports it. Absent ids resolve to level 0 (the authored base row), so
+  /// a caller with no progression to apply can leave this empty.
+  final Map<String, int> characterLevels;
+
   final int _maxMobs;
 
   final List<Mob> mobs = [];
@@ -108,7 +116,12 @@ class BattleRound {
   }) {
     if (mobs.length - _deadCount() >= _maxMobs) return null;
     final def = content.character(characterId);
-    final stats = def?.baseStats ?? const MobStats(hp: 5, atk: 1, def: 0.5, speed: 1.76, seekRange: 2.6);
+    // Purchased levels have to be resolved here, not at the call site: the
+    // tower's own wave spawns and a gate's crowd clones both come through
+    // spawnMob without any caller in a position to know the level. Reading
+    // baseStats unconditionally is what made shop upgrades cosmetic.
+    final stats = def?.statsAtLevel(characterLevels[characterId] ?? 0) ??
+        const MobStats(hp: 5, atk: 1, def: 0.5, speed: 1.76, seekRange: 2.6);
     final crowdSeparation = def?.crowdSeparationRadius ?? 0.0;
 
     final mob = Mob(

@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:mobrush_data/mobrush_data.dart';
+import 'package:mobrush_save/mobrush_save.dart';
 import 'package:mobrush_sim/mobrush_sim.dart';
 
 import 'background_renderer.dart';
@@ -23,6 +24,15 @@ import 'structure_renderer.dart';
 /// — every earlier screen either measured performance with a synthetic
 /// crowd or proved a static picture in isolation.
 class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
+  Stage1Game({this.profile});
+
+  /// The player's save, when the round was entered from Home. Everything
+  /// bought in the shop is applied through this: which cannon is equipped
+  /// and at what level, which character the cannon and RUSH deploy, and
+  /// what level each of the three abilities is tuned to. Null for the raw
+  /// scene-picker entry point, which falls back to the base loadout.
+  final PlayerProfile? profile;
+
   late final BattleRound round;
   late final CharacterAtlas atlas;
   late final BattleSceneRenderer scene;
@@ -110,11 +120,25 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       ),
     ];
 
-    // Real Standard Cannon (id "cannon") stats at level 0 — the exported
-    // content.json, not a hand-typed stand-in.
-    final cannonDef = content.cannons.firstWhere((c) => c.id == 'cannon');
-    final cannonStats = cannonDef.statsAtLevel(0);
+    // The equipped loadout, resolved from the save. A cannon the player
+    // bought and upgraded has to actually shoot differently, or the shop is
+    // decoration — same reasoning as `BattleRound.characterLevels`.
+    final p = profile;
+    final cannonDef = content.cannons.firstWhere(
+      (c) => c.id == (p?.selectedCannonId ?? ''),
+      orElse: () => content.cannons.firstWhere((c) => c.id == 'cannon'),
+    );
+    final cannonStats = cannonDef.statsAtLevel(p?.getCannonLevel(cannonDef.id) ?? 0);
     rushUnitCount = cannonStats.rushUnitCount;
+
+    // The roster's first entry is the primary character, matching
+    // `Hud.ResolveSquadCards`' own "first card is the selection" rule.
+    final characterId = (p?.characterRoster.isNotEmpty ?? false)
+        ? p!.characterRoster.first
+        : 'base';
+    final characterLevels = <String, int>{
+      for (final c in content.characters) c.id: p?.getCharacterLevel(c.id) ?? 0,
+    };
 
     final base = PlayerBase(
       baseHealth: 25,
@@ -133,8 +157,9 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       mobsPerShot: cannonStats.mobsPerShot,
     );
 
-    AbilityTuning tuningOf(String id) =>
-        content.abilities.firstWhere((a) => a.id == id).tuningAtLevel(0);
+    AbilityTuning tuningOf(String id) => content.abilities
+        .firstWhere((a) => a.id == id)
+        .tuningAtLevel(p?.getAbilityLevel(id) ?? 0);
 
     final abilities = BattleAbilities(
       freeze: tuningOf('freeze'),
@@ -143,6 +168,7 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       maxEnergy: cannonStats.energyCapacity,
       startingEnergy: cannonStats.energyCapacity,
       energyRegenPerSecond: cannonStats.energyRegenPerSecond,
+      selectedCharacterId: characterId,
     );
 
     round = BattleRound(
@@ -155,9 +181,10 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
         Gate(multiplier: 2, x: 0, z: 1.5),
       ],
       maxMobs: 350,
+      characterLevels: characterLevels,
     );
 
-    _spawnStartingFormation();
+    _spawnStartingFormation(characterId);
 
     final structures = <StructurePlacement>[];
     final mainImg = await StructureImage.load(stage1Castles.main.assetPath);
@@ -206,10 +233,10 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
     simReady = true;
   }
 
-  void _spawnStartingFormation() {
+  void _spawnStartingFormation(String characterId) {
     for (var i = 0; i < 32; i++) {
       round.spawnMob(
-        0, 'base',
+        0, characterId,
         x: (i % 8 - 3.5) * 0.72, y: 0.5, z: 5.6 + (i ~/ 8) * 0.78,
         phase: MobPhase.grounded,
       );

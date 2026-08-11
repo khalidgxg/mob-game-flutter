@@ -3,6 +3,7 @@ import 'package:mobrush_save/mobrush_save.dart';
 import 'package:mobrush_sim/mobrush_sim.dart';
 
 import 'stage1_game.dart';
+import 'ui_theme.dart';
 
 /// Port of `Hud.cs` (914 lines of hand-built `RectTransform` UI) as ordinary
 /// Flutter widgets laid over the Flame `GameWidget`, the same hybrid this
@@ -43,13 +44,10 @@ class BattleHud extends StatefulWidget {
 }
 
 class _BattleHudState extends State<BattleHud> {
-  static const _navy = Color(0xFF06090F);
-  static const _navySoft = Color(0xFF0D1933);
-  static const _border = Color(0xFF1F3D6E);
-  static const _blueLight = Color(0xFF4DC7FF);
-  static const _gold = Color(0xFFFFB315);
-  static const _goldLight = Color(0xFFFFE147);
-  static const _red = Color(0xFFFA3D38);
+  static const _blueLight = MobRushTheme.blueLight;
+  static const _gold = MobRushTheme.gold;
+  static const _goldLight = MobRushTheme.goldBright;
+  static const _red = MobRushTheme.red;
 
   String? _hint;
   Color _hintColor = Colors.white;
@@ -136,7 +134,6 @@ class _BattleHudState extends State<BattleHud> {
 
   Widget _pauseButton() {
     return _framed(
-      color: _navySoft,
       onTap: _openPauseModal,
       child: const Padding(
         padding: EdgeInsets.all(10),
@@ -147,7 +144,6 @@ class _BattleHudState extends State<BattleHud> {
 
   Widget _missionCard() {
     return _framed(
-      color: _navySoft,
       child: const Padding(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
@@ -166,7 +162,6 @@ class _BattleHudState extends State<BattleHud> {
   Widget _resourcesCard() {
     final profile = widget.profile;
     return _framed(
-      color: _navy,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
@@ -193,9 +188,10 @@ class _BattleHudState extends State<BattleHud> {
       width: 40,
       height: 180,
       decoration: BoxDecoration(
-        color: _navy,
+        gradient: MobRushTheme.glassFill,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _border, width: 2),
+        border: Border.all(color: MobRushTheme.goldEdge, width: 2),
+        boxShadow: const [MobRushTheme.dropShadow],
       ),
       padding: const EdgeInsets.all(3),
       child: Column(
@@ -237,9 +233,13 @@ class _BattleHudState extends State<BattleHud> {
             margin: const EdgeInsets.symmetric(vertical: 6),
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: _navySoft,
+              gradient: MobRushTheme.glassFill,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: color, width: 2),
+              boxShadow: [
+                MobRushTheme.dropShadow,
+                if (charges > 0) BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 12),
+              ],
             ),
             child: Column(
               children: [
@@ -280,8 +280,10 @@ class _BattleHudState extends State<BattleHud> {
   Widget _commandDeck(BattleRound round) {
     return Container(
       decoration: const BoxDecoration(
-        color: _border,
+        gradient: MobRushTheme.glassFill,
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        border: Border(top: BorderSide(color: MobRushTheme.goldEdge, width: 2)),
+        boxShadow: [MobRushTheme.dropShadow],
       ),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
       child: Column(
@@ -289,7 +291,11 @@ class _BattleHudState extends State<BattleHud> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(color: _navySoft, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              gradient: MobRushTheme.glassFill,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x33FFFFFF)),
+            ),
             child: Row(
               children: [
                 const SizedBox(width: 14),
@@ -343,9 +349,9 @@ class _BattleHudState extends State<BattleHud> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _navySoft,
+        gradient: MobRushTheme.glassFill,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _border),
+        border: Border.all(color: const Color(0x33FFFFFF)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -378,16 +384,8 @@ class _BattleHudState extends State<BattleHud> {
     );
   }
 
-  Widget _framed({required Color color, required Widget child, VoidCallback? onTap}) {
-    final panel = Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _border, width: 2),
-      ),
-      child: child,
-    );
-    return onTap == null ? panel : GestureDetector(onTap: onTap, child: panel);
+  Widget _framed({required Widget child, VoidCallback? onTap}) {
+    return GlassPanel(onTap: onTap, radius: 10, child: child);
   }
 
   void _openPauseModal() {
@@ -396,7 +394,7 @@ class _BattleHudState extends State<BattleHud> {
       context: context,
       barrierColor: Colors.black87,
       builder: (context) => AlertDialog(
-        backgroundColor: _navy,
+        backgroundColor: MobRushTheme.bgDeep,
         title: const Text('BATTLE PAUSED', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -412,7 +410,7 @@ class _BattleHudState extends State<BattleHud> {
               widget.onRestart();
             }),
             const SizedBox(height: 10),
-            _pauseAction('MAP', _navySoft, () {
+            _pauseAction('MAP', MobRushTheme.bgNavy, () {
               widget.game.resumeEngine();
               Navigator.of(context).pop();
               widget.onOpenMap();

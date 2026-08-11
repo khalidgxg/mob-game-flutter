@@ -233,7 +233,8 @@ class Stage1Screen extends StatefulWidget {
 }
 
 class _Stage1ScreenState extends State<Stage1Screen> {
-  late final Stage1Game _game = Stage1Game()..onOutcome = _handleOutcome;
+  late final Stage1Game _game = Stage1Game(profile: widget.profile)
+    ..onOutcome = _handleOutcome;
 
   static const _baseCoins = 50;
   static const _parSeconds = 90.0;
