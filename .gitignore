@@ -12,3 +12,4 @@ build/
 android/.gradle/
 android/local.properties
 ios/Pods/
+.dart_tool/

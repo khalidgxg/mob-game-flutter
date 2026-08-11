@@ -1,0 +1,82 @@
+{
+  "formatVersion": 1,
+  "characters": [
+    {
+      "id": "base",
+      "displayName": "Recruit",
+      "role": "PlayerRoster",
+      "visualScale": 0.5,
+      "crowdSeparationRadius": 0,
+      "baseStats": { "hp": 2, "atk": 1.5, "def": 0, "speed": 1.76, "attackSpeed": 5, "seekRange": 2.6 },
+      "launchEnergyCost": 5,
+      "levels": [
+        {
+          "stats": { "hp": 3, "atk": 2, "def": 0.2, "speed": 1.76, "attackSpeed": 5, "seekRange": 2.6 },
+          "unlockCost": 100,
+          "requiredStageIndex": -1
+        }
+      ],
+      "unlockCost": 0,
+      "unlockRequiredStage": -1,
+      "unlockAfterStageId": "",
+      "maxDeploymentsPerRound": 0,
+      "spawnInStartingFormation": true
+    },
+    {
+      "id": "max",
+      "displayName": "Max",
+      "role": "PlayerRoster",
+      "visualScale": 0.65,
+      "crowdSeparationRadius": 2.0,
+      "baseStats": { "hp": 40, "atk": 8, "def": 3, "speed": 0.9, "attackSpeed": 1, "seekRange": 3.0 },
+      "launchEnergyCost": 40,
+      "levels": [],
+      "unlockCost": 5000,
+      "unlockRequiredStage": 6,
+      "unlockAfterStageId": "",
+      "maxDeploymentsPerRound": 1,
+      "spawnInStartingFormation": false
+    }
+  ],
+  "cannons": [
+    {
+      "id": "cannon",
+      "displayName": "Standard Cannon",
+      "unlockCost": 0,
+      "fireRate": 0.045,
+      "launchSpeed": 6.0,
+      "launchLift": 2.2,
+      "spread": 0.09,
+      "ammoCapacity": 130,
+      "mobsPerShot": 1,
+      "mobScale": 1.0,
+      "energyCapacity": 100,
+      "energyRegenPerSecond": 8,
+      "rushUnitCount": 7,
+      "playerHealthBonus": 0,
+      "levels": [
+        {
+          "unlockCost": 200,
+          "requiredStageIndex": -1,
+          "fireRateBonus": -0.002,
+          "launchSpeedBonus": 0.5,
+          "launchLiftBonus": 0,
+          "spreadBonus": -0.005,
+          "ammoCapacityBonus": 10,
+          "mobsPerShotBonus": 0,
+          "mobScaleBonus": 0,
+          "rushUnitCountBonus": 1,
+          "energyCapacityBonus": 10,
+          "energyRegenPerSecondBonus": 0.5,
+          "playerHealthBonusBonus": 0
+        }
+      ]
+    }
+  ],
+  "rewardRules": {
+    "repeatRewardRate": 0.25,
+    "starBonusRate": 0.25,
+    "firstWinOfDayBonus": 1.0,
+    "maxCoinsPerRound": 0
+  }
+}

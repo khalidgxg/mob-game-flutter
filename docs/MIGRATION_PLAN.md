@@ -118,6 +118,18 @@ read without Unity present.
 **Gate:** the exported catalogs load in Dart and pass the ported validator with
 the same verdicts Unity's `ContentValidatorMenu` gives today.
 
+**Progress:** `ContentExporter.cs`, `mobrush_data` (characters, cannons,
+`RewardRules`/`RewardCalculator`/`StarRating`) and `mobrush_save`
+(`PlayerProfile`, full accessor surface) are committed with 37 passing parity
+tests. **Not yet done:** `StageDefinition`, `AbilityDefinition`,
+`CharacterProgression`, `StagePresentationProfile`, and the 664-line
+`ContentValidation` port. `mobrush_data`'s tests currently run against a
+hand-authored fixture matching `ContentExporter`'s JSON shape, not a real
+export — no Unity installation was available to run the exporter and confirm
+the round-trip against live content. Running `MobRush ▸ Export Content for
+Flutter` in the Editor and diffing its output against the fixture is the
+first thing to verify before treating this phase as gated shut.
+
 ### Phase 2 — Complete the simulation
 
 The PoC covers the crowd solve and mob movement. The rest of the battle:

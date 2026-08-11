@@ -1,0 +1,10 @@
+name: mobrush_save
+description: PlayerProfile — persistent save state for MobRush, ported from Assets/Scripts/Save/PlayerProfile.cs.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dev_dependencies:
+  test: ^1.25.0

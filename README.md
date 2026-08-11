@@ -13,9 +13,20 @@ Flutter?*
 ```
 packages/mobrush_sim/   Pure Dart. The battle simulation, ported from C#.
                         No Flutter, no Flame, no rendering. Unit-testable.
-apps/poc_battle/        Flutter + Flame. Renders that simulation.
+packages/mobrush_data/  Pure Dart. Content models (characters, cannons,
+                        reward rules), loaded from ContentExporter's JSON.
+packages/mobrush_save/  Pure Dart. PlayerProfile, ported field-for-field.
+apps/poc_battle/        Flutter + Flame. Renders the simulation.
 docs/MIGRATION_PLAN.md  The full plan this PoC was built to justify.
 ```
+
+`packages/mobrush_data` and `packages/mobrush_save` are Phase 1 of the plan —
+content and save state moved out of Unity's ScriptableObjects into
+engine-independent Dart, mirroring `mobrush_sim`'s shape. 37 tests currently
+pass across the two packages (`dart test` in each). What Phase 1 does not yet
+cover — `StageDefinition`, `AbilityDefinition`, the full `ContentValidation`
+port, and a real (not hand-authored) content export — is listed under Phase
+1's "Progress" note in the migration plan.
 
 The split between those two packages is the whole architecture in miniature.
 `mobrush_sim` has no dependency on any engine, so the rules of the game can be
