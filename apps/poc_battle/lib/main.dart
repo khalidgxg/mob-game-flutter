@@ -5,6 +5,8 @@ import 'package:mobrush_save/mobrush_save.dart';
 import 'package:mobrush_sim/mobrush_sim.dart';
 
 import 'battle_game.dart';
+import 'battle_hud.dart';
+import 'campaign_map_screen.dart';
 import 'home_screen.dart';
 import 'profile_service.dart';
 import 'stage1_game.dart';
@@ -197,24 +199,22 @@ class _TelemetryState extends State<_Telemetry> {
 }
 
 /// Phase 4's playable scene: drag/tap to aim and fire the cannon at Stage
-/// 1's real towers. The HUD strip is deliberately minimal — energy and
-/// outcome only — full parity with `Hud.cs`'s ability buttons and wave
-/// tracker is separate work this phase does not claim to finish.
+/// 1's real towers, now with the real `Hud.cs` port (`BattleHud`) —
+/// pause/mission/resources cards, energy meter, the three ability buttons
+/// wired to `BattleAbilities.tryUse`, force band, ammo/base-health chips,
+/// and the BATTLE→RUSH button. See `battle_hud.dart`'s own doc comment for
+/// exactly what isn't ported yet (wave tracker, multi-character squad row).
 ///
 /// Confirmed on a real Android device (arm64 APK build): the HUD renders
-/// correctly. The earlier report of missing HUD text was specific to this
+/// correctly. An earlier report of missing HUD text was specific to this
 /// project's headless Chromium/CanvasKit/SwiftShader screenshot pipeline,
 /// not a real bug — on-device, every `Positioned` sibling in the `Stack`
 /// paints as expected.
 ///
-/// What IS real, confirmed on-device too: the lane doesn't fill the
-/// viewport — `GroundRenderer` only draws the lane quad itself (a fixed
-/// ±24-unit depth strip), with no sky/background art behind it, so the
-/// screen letterboxes to black above, below, and beside the lane. That's
-/// expected for this PoC's scope — it exists to prove the simulation and
-/// the depth-sorted renderer agree with each other, not to art-direct a
-/// finished frame — and filling the rest of the screen is later polish
-/// work, not a Phase 4 gate item.
+/// The lane doesn't fill the viewport — `GroundRenderer` draws only the
+/// lane quad itself (a fixed ±24-unit depth strip); filling the rest of
+/// the screen with background art beyond the real ground texture is later
+/// polish work.
 class Stage1Screen extends StatefulWidget {
   const Stage1Screen({super.key, this.profile, this.profileService, this.stageId = 'stage_1'});
 
@@ -292,68 +292,47 @@ class _Stage1ScreenState extends State<Stage1Screen> {
     Navigator.of(context).pop(profile);
   }
 
+  void _restart() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => Stage1Screen(
+          profile: widget.profile,
+          profileService: widget.profileService,
+          stageId: widget.stageId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openMap() async {
+    final profile = widget.profile;
+    final profileService = widget.profileService;
+    if (profile == null || profileService == null) {
+      Navigator.of(context).maybePop(profile);
+      return;
+    }
+    Navigator.of(context).pop(profile);
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CampaignMapScreen(profile: profile, profileService: profileService),
+      ),
+    );
+  }
+
+  void _goHome() => Navigator.of(context).popUntil((route) => route.isFirst);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
           GameWidget(game: _game),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white70),
-              onPressed: () => Navigator.of(context).maybePop(widget.profile),
-            ),
-          ),
-          Positioned(
-            top: 48,
-            left: 16,
-            child: StreamBuilder<void>(
-              stream: Stream.periodic(const Duration(milliseconds: 200)),
-              builder: (context, _) {
-                if (!_game.simReady) return const SizedBox.shrink();
-                final r = _game.round;
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: DefaultTextStyle(
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      color: Colors.white,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('FPS       ${_game.fps.toStringAsFixed(1)}'),
-                        Text('sim       ${_game.simMs.toStringAsFixed(2)} ms'),
-                        Text('outcome   ${r.outcome.name}'),
-                        Text('ammo      ${r.cannon.reserve}/${r.cannon.ammoCapacity}'),
-                        Text('energy    ${r.abilities.energy.toStringAsFixed(0)}'
-                            '/${r.abilities.maxEnergy.toStringAsFixed(0)}'),
-                        Text('base hp   ${r.base.currentHealth}/${r.base.maxHealth}'),
-                        Text('towers    ${r.towers.where((t) => t.alive).length}'
-                            '/${r.towers.length} standing'),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 24,
-            child: Text(
-              'Drag anywhere on the lane to aim and fire',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 12),
-            ),
+          BattleHud(
+            game: _game,
+            profile: widget.profile,
+            onRestart: _restart,
+            onOpenMap: _openMap,
+            onGoHome: _goHome,
           ),
         ],
       ),

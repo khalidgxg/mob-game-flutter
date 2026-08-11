@@ -78,6 +78,14 @@ class BattleRound {
     return n;
   }
 
+  int get liveEnemyMobCount {
+    var n = 0;
+    for (final m in mobs) {
+      if (!m.dead && m.team == 1) n++;
+    }
+    return n;
+  }
+
   bool get _anyTowerAlive {
     for (final t in towers) {
       if (t.alive) return true;
@@ -169,6 +177,37 @@ class BattleRound {
 
   int _launchEnergyCost(String characterId) =>
       content.character(characterId)?.launchEnergyCost ?? 0;
+
+  /// Port of `BattleAbilityController.TryRush`/`GetDeployableUnitCount`:
+  /// instantly deploys [rushUnitCount] of the selected character at the
+  /// player's own formation line, at a flat `launchEnergyCost ×
+  /// rushUnitCount` energy cost — a second, energy-gated way to add units
+  /// to the crowd, independent of the cannon's per-shot cost. Returns
+  /// false (spending nothing) if energy is short or the mob cap has no
+  /// room left for the full deployment, matching the C#'s all-or-nothing
+  /// spend.
+  bool tryRush({required int rushUnitCount, required double formationZ}) {
+    if (outcome != RoundOutcome.ongoing || rushUnitCount <= 0) return false;
+    final characterId = abilities.selectedCharacterId;
+    final cost = _launchEnergyCost(characterId) * rushUnitCount;
+    if (cost > 0 && abilities.energy < cost) return false;
+    if (mobs.length - _deadCount() + rushUnitCount > _maxMobs) return false;
+
+    if (cost > 0) abilities.tryConsumeEnergy(cost.toDouble());
+    for (var i = 0; i < rushUnitCount; i++) {
+      final row = i ~/ 8;
+      final col = i % 8;
+      spawnMob(
+        0,
+        characterId,
+        x: (col - 3.5) * 0.72,
+        y: 0.5,
+        z: formationZ + row * 0.78,
+        phase: MobPhase.grounded,
+      );
+    }
+    return true;
+  }
 
   /// Advances the round by [dt] of wall-clock time, running as many fixed
   /// steps as that time covers — mirrors `BattleSim.advance`.

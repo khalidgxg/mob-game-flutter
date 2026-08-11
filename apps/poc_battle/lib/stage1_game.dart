@@ -50,6 +50,43 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
   void Function(RoundOutcome outcome)? onOutcome;
   bool _outcomeReported = false;
 
+  /// Real Standard Cannon `rushUnitCount` at level 0, set once `onLoad`
+  /// resolves — how many units one tap of RUSH deploys.
+  int rushUnitCount = 1;
+
+  /// Port of `BattleAbilityController.BattleStarted`: the cannon and RUSH
+  /// stay inert (matching `TryBattleAction`'s first tap being "start", not
+  /// "fire") until the HUD's BATTLE button is pressed.
+  bool battleStarted = false;
+
+  void startBattle() => battleStarted = true;
+
+  /// Port of `Hud.TryBattleAction`'s RUSH branch. Returns a short hint
+  /// string for the caller to show, mirroring the three C# outcomes:
+  /// deployed, unit-limit reached, or not enough energy.
+  String tryRush() {
+    if (!battleStarted) return 'START THE BATTLE FIRST';
+    final ok = round.tryRush(rushUnitCount: rushUnitCount, formationZ: 5.6);
+    if (ok) return 'RUSH DEPLOYED';
+    final def = round.content.character(round.abilities.selectedCharacterId);
+    final cost = (def?.launchEnergyCost ?? 0) * rushUnitCount;
+    return cost > round.abilities.energy
+        ? 'RUSH NEEDS $cost ENERGY'
+        : 'UNIT LIMIT REACHED';
+  }
+
+  /// Port of `Hud.TryAbility`. Returns a short hint string for the caller.
+  String tryAbility(Ability ability) {
+    if (!battleStarted) return 'START THE BATTLE FIRST';
+    final result = round.abilities.tryUse(ability, mobs: round.mobs, towers: round.towers);
+    if (!result.applied) return 'NO VALID TARGET';
+    return switch (ability) {
+      Ability.freeze => 'ENEMIES FROZEN',
+      Ability.fireball => 'FIREBALL IMPACT',
+      Ability.lightning => 'LIGHTNING STRIKE',
+    };
+  }
+
   @override
   Future<void> onLoad() async {
     atlas = await CharacterAtlas.load();
@@ -77,6 +114,7 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
     // content.json, not a hand-typed stand-in.
     final cannonDef = content.cannons.firstWhere((c) => c.id == 'cannon');
     final cannonStats = cannonDef.statsAtLevel(0);
+    rushUnitCount = cannonStats.rushUnitCount;
 
     final base = PlayerBase(
       baseHealth: 25,
@@ -235,7 +273,7 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       ..reset()
       ..start();
 
-    if (_firing) round.aimAndFire(_aimX, _aimZ);
+    if (_firing && battleStarted) round.aimAndFire(_aimX, _aimZ);
 
     final sw = Stopwatch()..start();
     round.advance(dt);
