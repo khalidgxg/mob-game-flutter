@@ -46,9 +46,16 @@ void main() {
   });
 
   test(
-    'the live cannon catalog is currently empty (CannonLibrary/codeAuthored '
-    'cannons are not wired into GameConfig.cannonCatalog) -- not an export bug',
+    'this fixture predates the CannonLibrary export fix -- cannons is empty '
+    'here on purpose, not proof the exporter is still broken',
     () {
+      // ContentExporter.cs originally read only GameConfig.cannonCatalog,
+      // which this project leaves empty: every cannon ("cannon", "heavy") is
+      // built by CannonLibrary.BuildSpecs() at runtime and never saved as a
+      // catalog asset. The exporter now also reads CannonLibrary.All,
+      // mirroring Game.GetAllCannons()'s exact precedence. This fixture was
+      // captured before that fix, so it still shows the old zero-cannon
+      // output -- replace it with a fresh export to verify the fix for real.
       expect(catalog.cannons, isEmpty);
     },
   );
