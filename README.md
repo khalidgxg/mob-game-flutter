@@ -43,6 +43,18 @@ headless run where a mob froze in place instead of dying, fixed by porting
 Phase 2's progress note in the migration plan for what's still not modeled
 (`StageManager`/`LoadoutManager`, `LevelBuilder`'s JSON stage assembly).
 
+Phase 3's actual finding: castles, towers and gates aren't 3D models in the
+live game at all — they're transparent PNGs on a camera-facing billboard,
+which needs no bake step, only its placement math ported (see
+`apps/poc_battle/lib/structure_artwork.dart`, sourced directly from
+`ReferenceCastleVisual.cs`/`RuntimeGateVisual.cs` and the real
+`Stage_{1,2,3}_Presentation.asset` files). The real artwork is wired into a
+`?preview=structures` scene for visual approval. Characters were already
+baked and approved on-device during Phase 0; Phase 3 formalizes those
+numbers (16 run / 10 attack frames, 160px tiles, shadows as ground decals —
+the decal drawing itself is Phase 4 scope, since it touches
+`CrowdRenderer`).
+
 124 tests currently pass across the three packages combined (`dart test` in
 each).
 

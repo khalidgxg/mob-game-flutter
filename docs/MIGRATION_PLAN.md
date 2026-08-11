@@ -240,14 +240,39 @@ Scope, from the authored roster: 6 characters × 2 clips (run, attack) × 16
 frames ≈ **192 frames**, one 2048² sheet. Same treatment for castles, gates,
 towers and scenery props — those are single frames, not clips.
 
-Decisions to make here, once:
-- Frame count per clip (16 is the starting point; 12 may be enough at scale).
-- Frame resolution (96px in the PoC; Max is 1.35× so he needs headroom).
-- Whether shadows bake in or are drawn as ground decals (decals recommended —
-  they stay correct as units overlap).
-
 **Gate:** all six characters baked, dropped into the PoC, and visually approved
 by you against Unity screenshots.
+
+**Progress — characters:** `CrowdSpriteBaker.cs` (added during Phase 0's
+device-validation push) produced a real bake — 208 frames across 8 catalog
+entries, 2560×2080 — verified running on a real Android device in the PoC.
+The three decisions this phase asks for are settled by what was actually
+baked and shipped: **16 run frames / 10 attack frames per character**,
+**160px tiles**, and **shadows as ground decals** (decided, not yet drawn —
+see below).
+
+**Progress — structures, and the actual finding of this phase:** castles,
+towers and gates in the live game are not 3D models rendered every frame.
+`ReferenceCastleVisual.cs`/`RuntimeGateVisual.cs` present them as
+transparent 2D PNGs on a quad rotated to exactly match `BattleCamera`'s
+fixed 45° pitch — a billboard that always faces a fixed-angle camera renders
+as an undistorted flat image, so **these assets needed no bake step at
+all**. `apps/poc_battle/lib/structure_artwork.dart` ports the placement math
+directly from the C# and the real `Stage_{1,2,3}_Presentation.asset` files
+(world width, forward offset, and the `visibleBottom` ground-anchor fraction
+— confirmed per-stage, including that Stage 3 authors no side-tower artwork
+at all, matching the flow document), and the real PNGs were copied in
+unmodified. `structure_preview_game.dart` (reachable at
+`?preview=structures`) renders Stage 1's real castle and gate artwork at
+their real lane positions; a screenshot was sent for visual approval.
+
+**Not yet done:** shadow decals are a decision, not yet an implementation —
+drawing them means touching `CrowdRenderer`'s batched draw call, which is
+Phase 4 scope ("extend it to structures and props"), so it stays there
+rather than being half-built here. Gate/tower artwork for Stage 2 and 3 is
+copied and modeled in `structure_artwork.dart` but not yet exercised in the
+preview scene (only Stage 1 was rendered for approval). Scenery props
+(trees, rocks, the well) are not addressed at all yet.
 
 ### Phase 4 — Battle presentation
 

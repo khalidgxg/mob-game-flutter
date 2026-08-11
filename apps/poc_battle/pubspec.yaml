@@ -22,3 +22,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/crowd_export/
+    - assets/structures/stage1/
+    - assets/structures/stage2/
+    - assets/structures/stage3/
+    - assets/structures/gate/

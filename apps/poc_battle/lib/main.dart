@@ -2,6 +2,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'battle_game.dart';
+import 'structure_preview_game.dart';
 
 void main() {
   runApp(const PocApp());
@@ -12,11 +13,17 @@ class PocApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ?preview=structures shows Phase 3's castle/gate artwork scene instead
+    // of the crowd performance PoC — a separate screen on purpose, so
+    // looking at it can never perturb the already-measured crowd numbers.
+    final showStructures = Uri.base.queryParameters['preview'] == 'structures';
     return MaterialApp(
       title: 'MobRush — Flutter/Flame proof of concept',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: const BattleScreen(),
+      home: showStructures
+          ? GameWidget(game: StructurePreviewGame())
+          : const BattleScreen(),
     );
   }
 }

@@ -131,6 +131,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  mobrush_data:
+    dependency: transitive
+    description:
+      path: "../../packages/mobrush_data"
+      relative: true
+    source: path
+    version: "0.1.0"
   mobrush_sim:
     dependency: "direct main"
     description:
