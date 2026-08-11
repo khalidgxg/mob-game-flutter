@@ -120,15 +120,22 @@ the same verdicts Unity's `ContentValidatorMenu` gives today.
 
 **Progress:** `ContentExporter.cs`, `mobrush_data` (characters, cannons,
 `RewardRules`/`RewardCalculator`/`StarRating`) and `mobrush_save`
-(`PlayerProfile`, full accessor surface) are committed with 37 passing parity
-tests. **Not yet done:** `StageDefinition`, `AbilityDefinition`,
+(`PlayerProfile`, full accessor surface) are committed with 45 passing tests.
+The round-trip is now confirmed against **real exported content**, not just
+the hand-authored fixture: `MobRush ▸ Export Content for Flutter` was run in
+the live Editor, its `content.json` (8 characters, real authored stat lines
+up to 5 purchased levels, live `RewardRules`) was committed as a second test
+fixture, and `real_export_smoke_test.dart` parses it and resolves
+`statsAtLevel` for every authored level of every character. One live finding
+from that run: `GameConfig.cannonCatalog` is currently empty — cannons in
+this project are built by `CannonLibrary.cs` at some other point in the
+pipeline rather than authored directly into the catalog asset the exporter
+reads, so `mobrush_data`'s cannon math is verified against the hand-authored
+fixture only until that's wired up or otherwise clarified.
+
+**Not yet done:** `StageDefinition`, `AbilityDefinition`,
 `CharacterProgression`, `StagePresentationProfile`, and the 664-line
-`ContentValidation` port. `mobrush_data`'s tests currently run against a
-hand-authored fixture matching `ContentExporter`'s JSON shape, not a real
-export — no Unity installation was available to run the exporter and confirm
-the round-trip against live content. Running `MobRush ▸ Export Content for
-Flutter` in the Editor and diffing its output against the fixture is the
-first thing to verify before treating this phase as gated shut.
+`ContentValidation` port.
 
 ### Phase 2 — Complete the simulation
 

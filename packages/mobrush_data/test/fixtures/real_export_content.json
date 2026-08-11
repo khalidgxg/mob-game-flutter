@@ -1,0 +1,408 @@
+{
+    "formatVersion": 1,
+    "characters": [
+        {
+            "id": "base",
+            "displayName": "Recruit",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 20.0,
+                "atk": 6.0,
+                "def": 2.0,
+                "speed": 1.5,
+                "attackSpeed": 1.600000023841858,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 14,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 23.0,
+                        "atk": 7.0,
+                        "def": 2.0,
+                        "speed": 1.5,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 26.0,
+                        "atk": 8.0,
+                        "def": 2.5,
+                        "speed": 1.5,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 29.0,
+                        "atk": 8.0,
+                        "def": 3.5,
+                        "speed": 1.600000023841858,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 33.0,
+                        "atk": 9.5,
+                        "def": 3.5,
+                        "speed": 1.600000023841858,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 38.0,
+                        "atk": 11.0,
+                        "def": 4.0,
+                        "speed": 1.600000023841858,
+                        "attackSpeed": 1.7999999523162842,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "monkey",
+            "displayName": "Monkey",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 16.0,
+                "atk": 5.0,
+                "def": 1.0,
+                "speed": 2.0,
+                "attackSpeed": 2.799999952316284,
+                "seekRange": 6.0
+            },
+            "launchEnergyCost": 20,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 18.0,
+                        "atk": 6.0,
+                        "def": 1.0,
+                        "speed": 2.0,
+                        "attackSpeed": 2.799999952316284,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 20.0,
+                        "atk": 7.0,
+                        "def": 1.0,
+                        "speed": 2.0,
+                        "attackSpeed": 3.0,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 22.0,
+                        "atk": 7.0,
+                        "def": 1.5,
+                        "speed": 2.200000047683716,
+                        "attackSpeed": 3.0,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 25.0,
+                        "atk": 8.5,
+                        "def": 1.5,
+                        "speed": 2.200000047683716,
+                        "attackSpeed": 3.200000047683716,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 28.0,
+                        "atk": 10.0,
+                        "def": 2.0,
+                        "speed": 2.4000000953674318,
+                        "attackSpeed": 3.4000000953674318,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ],
+            "unlockCost": 250,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "base_enemy",
+            "displayName": "Base Enemy",
+            "role": "StageEnemy",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 20.0,
+                "atk": 5.5,
+                "def": 2.0,
+                "speed": 1.399999976158142,
+                "attackSpeed": 1.5,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 5,
+            "levels": [],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "robot",
+            "displayName": "Robot",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 34.0,
+                "atk": 10.0,
+                "def": 3.0,
+                "speed": 1.100000023841858,
+                "attackSpeed": 1.0,
+                "seekRange": 3.0
+            },
+            "launchEnergyCost": 34,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 39.0,
+                        "atk": 11.0,
+                        "def": 3.0,
+                        "speed": 1.100000023841858,
+                        "attackSpeed": 1.0,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 44.0,
+                        "atk": 12.0,
+                        "def": 3.5,
+                        "speed": 1.100000023841858,
+                        "attackSpeed": 1.0,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 49.0,
+                        "atk": 13.0,
+                        "def": 4.0,
+                        "speed": 1.100000023841858,
+                        "attackSpeed": 1.100000023841858,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 56.0,
+                        "atk": 15.0,
+                        "def": 4.0,
+                        "speed": 1.149999976158142,
+                        "attackSpeed": 1.100000023841858,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 64.0,
+                        "atk": 17.0,
+                        "def": 4.5,
+                        "speed": 1.149999976158142,
+                        "attackSpeed": 1.2000000476837159,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ],
+            "unlockCost": 1000,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "reno-stage2",
+            "displayName": "Reno",
+            "role": "StageEnemy",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 28.0,
+                "atk": 7.0,
+                "def": 4.0,
+                "speed": 1.649999976158142,
+                "attackSpeed": 1.7999999523162842,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 0,
+            "levels": [],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "max-stage3",
+            "displayName": "Max",
+            "role": "StageEnemy",
+            "visualScale": 1.7000000476837159,
+            "crowdSeparationRadius": 3.4000000953674318,
+            "baseStats": {
+                "hp": 300.0,
+                "atk": 50.0,
+                "def": 50.0,
+                "speed": 0.30000001192092898,
+                "attackSpeed": 5.0,
+                "seekRange": 2.0
+            },
+            "launchEnergyCost": 0,
+            "levels": [],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "reno-player",
+            "displayName": "Reno",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 28.0,
+                "atk": 7.0,
+                "def": 4.0,
+                "speed": 1.649999976158142,
+                "attackSpeed": 1.7999999523162842,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 28,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 32.0,
+                        "atk": 8.0,
+                        "def": 4.5,
+                        "speed": 1.649999976158142,
+                        "attackSpeed": 1.899999976158142,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 150,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 37.0,
+                        "atk": 10.0,
+                        "def": 5.5,
+                        "speed": 1.7000000476837159,
+                        "attackSpeed": 2.0,
+                        "seekRange": 4.800000190734863
+                    },
+                    "unlockCost": 400,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 44.0,
+                        "atk": 12.0,
+                        "def": 6.5,
+                        "speed": 1.75,
+                        "attackSpeed": 2.200000047683716,
+                        "seekRange": 5.0
+                    },
+                    "unlockCost": 850,
+                    "requiredStageIndex": -1
+                }
+            ],
+            "unlockCost": 600,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "stage_2",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "max-player",
+            "displayName": "Max",
+            "role": "PlayerRoster",
+            "visualScale": 1.7000000476837159,
+            "crowdSeparationRadius": 3.4000000953674318,
+            "baseStats": {
+                "hp": 300.0,
+                "atk": 50.0,
+                "def": 50.0,
+                "speed": 0.30000001192092898,
+                "attackSpeed": 5.0,
+                "seekRange": 2.0
+            },
+            "launchEnergyCost": 200,
+            "levels": [],
+            "unlockCost": 2500,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "stage_3",
+            "maxDeploymentsPerRound": 1,
+            "spawnInStartingFormation": false
+        }
+    ],
+    "cannons": [],
+    "rewardRules": {
+        "repeatRewardRate": 0.25,
+        "starBonusRate": 0.0,
+        "firstWinOfDayBonus": 0.0,
+        "maxCoinsPerRound": 10
+    }
+}
