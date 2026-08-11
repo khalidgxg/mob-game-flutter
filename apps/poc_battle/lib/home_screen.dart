@@ -4,6 +4,7 @@ import 'package:mobrush_save/mobrush_save.dart';
 import 'campaign_map_screen.dart';
 import 'main.dart' show Stage1Screen;
 import 'profile_service.dart';
+import 'shop_screen.dart';
 
 /// Port of `HomeMenu.cs` (708 lines of hand-anchored `RectTransform` code) —
 /// same five bands top to bottom (header, title, campaign hero, BATTLE CTA,
@@ -307,10 +308,17 @@ class _HomeScreenState extends State<HomeScreen> {
       case _NavTab.map:
         _openMap();
       case _NavTab.shop:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Shop not built yet — Phase 5 follow-up.')),
-        );
+        _openShop();
     }
+  }
+
+  Future<void> _openShop() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ShopScreen()),
+    );
+    // Currency can change in the shop; reload so Home's chip stays honest.
+    final result = await _service.load();
+    if (mounted) setState(() => _profile = result);
   }
 
   Future<void> _openMap() async {

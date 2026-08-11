@@ -8,10 +8,10 @@ import 'package:mobrush_sim/mobrush_sim.dart';
 
 import 'background_renderer.dart';
 import 'battle_scene_renderer.dart';
+import 'game_content.dart';
 import 'ground_renderer.dart';
 import 'iso.dart';
 import 'sprite_atlas.dart';
-import 'stage1_content.dart';
 import 'structure_artwork.dart';
 import 'structure_renderer.dart';
 
@@ -53,6 +53,7 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   Future<void> onLoad() async {
     atlas = await CharacterAtlas.load();
+    final content = await loadGameContent();
 
     projection = IsoProjection.fit(screenWidth: size.x, screenHeight: size.y);
     origin = ui.Offset(size.x / 2, size.y * 0.72);
@@ -72,34 +73,42 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       ),
     ];
 
+    // Real Standard Cannon (id "cannon") stats at level 0 — the exported
+    // content.json, not a hand-typed stand-in.
+    final cannonDef = content.cannons.firstWhere((c) => c.id == 'cannon');
+    final cannonStats = cannonDef.statsAtLevel(0);
+
     final base = PlayerBase(
       baseHealth: 25,
-      cannonHealthBonus: 30,
+      cannonHealthBonus: cannonStats.playerHealthBonus,
       defenceLineZ: 12.8,
       defenceLineX: 0,
       solidHalfDepth: 1.35,
     );
 
     final cannon = Cannon(
-      fireRate: 0.045,
-      launchSpeed: 6.0,
-      launchLift: 2.2,
-      spread: 0.09,
-      ammoCapacity: 130,
+      fireRate: cannonStats.fireRate,
+      launchSpeed: cannonStats.launchSpeed,
+      launchLift: cannonStats.launchLift,
+      spread: cannonStats.spread,
+      ammoCapacity: cannonStats.ammoCapacity,
+      mobsPerShot: cannonStats.mobsPerShot,
     );
 
+    AbilityTuning tuningOf(String id) =>
+        content.abilities.firstWhere((a) => a.id == id).tuningAtLevel(0);
+
     final abilities = BattleAbilities(
-      freeze: const AbilityTuning(charges: 2, duration: 4.0, radius: 12.0),
-      fireball: const AbilityTuning(
-        charges: 5, radius: 4.6, mobDamage: 90, castleDamage: 240, minimumDamage: 5.0,
-      ),
-      lightning: const AbilityTuning(charges: 1),
-      maxEnergy: 100,
-      startingEnergy: 100,
+      freeze: tuningOf('freeze'),
+      fireball: tuningOf('fireball'),
+      lightning: tuningOf('lightning'),
+      maxEnergy: cannonStats.energyCapacity,
+      startingEnergy: cannonStats.energyCapacity,
+      energyRegenPerSecond: cannonStats.energyRegenPerSecond,
     );
 
     round = BattleRound(
-      content: stage1Content,
+      content: content,
       towers: towers,
       base: base,
       cannon: cannon,

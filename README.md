@@ -75,14 +75,21 @@ background art behind it — expected for a PoC proving the simulation and
 renderer agree, not a finished frame. See the migration plan's Phase 4
 progress note for detail.
 
-Phase 5 starts on the meta screens: `apps/poc_battle/lib/home_screen.dart`
-ports `HomeMenu.cs`'s five bands (header, title, campaign hero, BATTLE CTA,
-bottom nav) onto plain Flutter `Column`/`Expanded` layout, reading real
-`PlayerProfile` fields from `mobrush_save` and pushing the real Stage 1
-scene from Phase 4 on BATTLE. It's now the app's default screen (`?preview=
-picker` still reaches the raw scene picker for debugging). Shop, campaign
-map, and real save persistence haven't started — see the migration plan's
-Phase 5 progress note for the full list of what's still a stub.
+Phase 5 covers the meta screens: Home, Map, and Shop all read real data now.
+`home_screen.dart` ports `HomeMenu.cs`'s five bands onto plain Flutter
+`Column`/`Expanded` layout, using the real approved art (`CastleHero.png`,
+`LogoWordmark.png`, icon set) copied from `Assets/Resources/Home/` instead
+of placeholders. `shop_screen.dart` is a real three-tab Heroes/Cannons/
+Skills shop reading `content.json` — the actual export from
+`ContentExporter.cs`, run for real and copied into `assets/content/` — with
+working buy/upgrade against a `PlayerProfile` persisted through
+`SharedPreferences` (`profile_service.dart`, the Flutter equivalent of
+`LocalJsonSaveStore.cs`). `campaign_map_screen.dart` is a simplified stand-in
+for the real illustrated campaign atlas, which isn't in the repo yet. It's
+all the app's default screen now (`?preview=picker` still reaches the raw
+scene picker for debugging). See the migration plan's Phase 5 progress note
+for the full list of what's still a stub (settings, loadout picker, wiring
+a purchase into the live battle).
 
 124 tests currently pass across the three packages combined (`dart test` in
 each).

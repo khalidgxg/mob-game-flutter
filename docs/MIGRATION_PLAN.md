@@ -373,19 +373,42 @@ button and nav's BATTLE tab both push the real Stage 1 playable scene
 query string) is now this Home screen — `?preview=picker` still reaches
 the raw scene picker if needed for debugging.
 
-**Not yet done:** no persistence — the profile is a fresh in-memory
-`PlayerProfile` each launch, not loaded from device storage the way
-`ProfileService` does live; wiring `mobrush_save`'s (de)serialization to
-actual file I/O is separate follow-up work. `HomeMenu.cs`'s settings
-modal only shows a placeholder dialog — sound toggle, How To Play, and the
-secret-code panel aren't ported. SHOP and MAP nav tabs are stubs (a
-snackbar) since `ShopScreen` and `CampaignMapScreen` haven't been started.
-Home's own generated art (castle hero, wordmark, icon set) isn't baked —
-this reuses Stage 1's real castle PNG and Material icons as an honest
-placeholder, matching the spirit of `HomeMenu.BuildCastleArt`'s geometric
-fallback for a missing `Resources/Home/CastleHero`. `VISUAL_IDENTITY.md`
-is not yet encoded as `ThemeData`/design tokens — colours are still
-hardcoded per-screen the same way the Unity presentation code was.
+Real persistence followed: `profile_service.dart` ports
+`LocalJsonSaveStore.cs` onto `SharedPreferences` (the closest cross-platform
+equivalent to a persistent-data-path JSON file, since web has no
+filesystem) — same missing/corrupt-data fallback to a fresh profile the C#
+`try`/`catch` gives. Home's own art (`CastleHero.png`, `LogoWordmark.png`,
+the header/nav icon set) and the three campaign node-state badges are the
+real approved PNGs copied straight from `Assets/Resources/Home/` and
+`Assets/Resources/UI/Campaign/` — reusing an already-approved project
+asset, the fal.ai policy's own first priority, rather than placeholder
+Material icons.
+
+`ContentExporter.cs` was run for real and its `content.json` (8 characters,
+2 cannons, 3 abilities, reward rules) copied into
+`assets/content/content.json`; `game_content.dart` loads and caches it at
+runtime, verified to parse cleanly against `mobrush_data`'s existing
+`ContentCatalog.fromJson`. `shop_screen.dart` is a real three-tab
+(Heroes/Cannons/Skills) Shop reading those real stats, with working
+buy/upgrade against the real `PlayerProfile` currency and persisted through
+`ProfileService` — port of `ShopScreen` + its Characters/Abilities/Cannons
+partials (1,478 lines). `Stage1Screen`'s Standard Cannon and ability tuning
+now come from this same real catalog (`statsAtLevel(0)`/`tuningAtLevel(0)`)
+instead of hand-typed numbers, closing the gap `stage1_content.dart`
+(now deleted) stood in for.
+
+**Not yet done:** `HomeMenu.cs`'s settings modal only shows a placeholder
+dialog — sound toggle, How To Play, and the secret-code panel aren't
+ported. Map is a stub list, not the real illustrated atlas — see
+`campaign_map_screen.dart`'s own note on the missing background art. Shop
+has no roster/loadout picker ("BATTLE TEAM") and no character portrait art
+yet (Unity's are 3D renders, not baked to sprites the way the crowd atlas
+was), and a purchase doesn't yet affect the live battle — `Stage1Screen`
+always spawns the base-tier stats regardless of what's bought, since
+wiring a purchased loadout into `BattleRound` is separate follow-up work.
+`VISUAL_IDENTITY.md` is not yet encoded as `ThemeData`/design tokens —
+colours are still hardcoded per-screen the same way the Unity presentation
+code was.
 
 ### Phase 6 — Audio, polish, release
 

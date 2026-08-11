@@ -1,0 +1,828 @@
+{
+    "formatVersion": 1,
+    "characters": [
+        {
+            "id": "base",
+            "displayName": "Recruit",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 20.0,
+                "atk": 6.0,
+                "def": 2.0,
+                "speed": 1.5,
+                "attackSpeed": 1.600000023841858,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 14,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 23.0,
+                        "atk": 7.0,
+                        "def": 2.0,
+                        "speed": 1.5,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 26.0,
+                        "atk": 8.0,
+                        "def": 2.5,
+                        "speed": 1.5,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 29.0,
+                        "atk": 8.0,
+                        "def": 3.5,
+                        "speed": 1.600000023841858,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 33.0,
+                        "atk": 9.5,
+                        "def": 3.5,
+                        "speed": 1.600000023841858,
+                        "attackSpeed": 1.600000023841858,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 38.0,
+                        "atk": 11.0,
+                        "def": 4.0,
+                        "speed": 1.600000023841858,
+                        "attackSpeed": 1.7999999523162842,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "monkey",
+            "displayName": "Monkey",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 16.0,
+                "atk": 5.0,
+                "def": 1.0,
+                "speed": 2.0,
+                "attackSpeed": 2.799999952316284,
+                "seekRange": 6.0
+            },
+            "launchEnergyCost": 20,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 18.0,
+                        "atk": 6.0,
+                        "def": 1.0,
+                        "speed": 2.0,
+                        "attackSpeed": 2.799999952316284,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 20.0,
+                        "atk": 7.0,
+                        "def": 1.0,
+                        "speed": 2.0,
+                        "attackSpeed": 3.0,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 22.0,
+                        "atk": 7.0,
+                        "def": 1.5,
+                        "speed": 2.200000047683716,
+                        "attackSpeed": 3.0,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 25.0,
+                        "atk": 8.5,
+                        "def": 1.5,
+                        "speed": 2.200000047683716,
+                        "attackSpeed": 3.200000047683716,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 28.0,
+                        "atk": 10.0,
+                        "def": 2.0,
+                        "speed": 2.4000000953674318,
+                        "attackSpeed": 3.4000000953674318,
+                        "seekRange": 6.0
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ],
+            "unlockCost": 250,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "base_enemy",
+            "displayName": "Base Enemy",
+            "role": "StageEnemy",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 20.0,
+                "atk": 5.5,
+                "def": 2.0,
+                "speed": 1.399999976158142,
+                "attackSpeed": 1.5,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 5,
+            "levels": [],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "robot",
+            "displayName": "Robot",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 34.0,
+                "atk": 10.0,
+                "def": 3.0,
+                "speed": 1.100000023841858,
+                "attackSpeed": 1.0,
+                "seekRange": 3.0
+            },
+            "launchEnergyCost": 34,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 39.0,
+                        "atk": 11.0,
+                        "def": 3.0,
+                        "speed": 1.100000023841858,
+                        "attackSpeed": 1.0,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 44.0,
+                        "atk": 12.0,
+                        "def": 3.5,
+                        "speed": 1.100000023841858,
+                        "attackSpeed": 1.0,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 49.0,
+                        "atk": 13.0,
+                        "def": 4.0,
+                        "speed": 1.100000023841858,
+                        "attackSpeed": 1.100000023841858,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 56.0,
+                        "atk": 15.0,
+                        "def": 4.0,
+                        "speed": 1.149999976158142,
+                        "attackSpeed": 1.100000023841858,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "stats": {
+                        "hp": 64.0,
+                        "atk": 17.0,
+                        "def": 4.5,
+                        "speed": 1.149999976158142,
+                        "attackSpeed": 1.2000000476837159,
+                        "seekRange": 3.0
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ],
+            "unlockCost": 1000,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "reno-stage2",
+            "displayName": "Reno",
+            "role": "StageEnemy",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 28.0,
+                "atk": 7.0,
+                "def": 4.0,
+                "speed": 1.649999976158142,
+                "attackSpeed": 1.7999999523162842,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 0,
+            "levels": [],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "max-stage3",
+            "displayName": "Max",
+            "role": "StageEnemy",
+            "visualScale": 1.7000000476837159,
+            "crowdSeparationRadius": 3.4000000953674318,
+            "baseStats": {
+                "hp": 300.0,
+                "atk": 50.0,
+                "def": 50.0,
+                "speed": 0.30000001192092898,
+                "attackSpeed": 5.0,
+                "seekRange": 2.0
+            },
+            "launchEnergyCost": 0,
+            "levels": [],
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "reno-player",
+            "displayName": "Reno",
+            "role": "PlayerRoster",
+            "visualScale": 0.5,
+            "crowdSeparationRadius": 0.0,
+            "baseStats": {
+                "hp": 28.0,
+                "atk": 7.0,
+                "def": 4.0,
+                "speed": 1.649999976158142,
+                "attackSpeed": 1.7999999523162842,
+                "seekRange": 4.5
+            },
+            "launchEnergyCost": 28,
+            "levels": [
+                {
+                    "stats": {
+                        "hp": 32.0,
+                        "atk": 8.0,
+                        "def": 4.5,
+                        "speed": 1.649999976158142,
+                        "attackSpeed": 1.899999976158142,
+                        "seekRange": 4.5
+                    },
+                    "unlockCost": 150,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 37.0,
+                        "atk": 10.0,
+                        "def": 5.5,
+                        "speed": 1.7000000476837159,
+                        "attackSpeed": 2.0,
+                        "seekRange": 4.800000190734863
+                    },
+                    "unlockCost": 400,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "stats": {
+                        "hp": 44.0,
+                        "atk": 12.0,
+                        "def": 6.5,
+                        "speed": 1.75,
+                        "attackSpeed": 2.200000047683716,
+                        "seekRange": 5.0
+                    },
+                    "unlockCost": 850,
+                    "requiredStageIndex": -1
+                }
+            ],
+            "unlockCost": 600,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "stage_2",
+            "maxDeploymentsPerRound": 0,
+            "spawnInStartingFormation": true
+        },
+        {
+            "id": "max-player",
+            "displayName": "Max",
+            "role": "PlayerRoster",
+            "visualScale": 1.7000000476837159,
+            "crowdSeparationRadius": 3.4000000953674318,
+            "baseStats": {
+                "hp": 300.0,
+                "atk": 50.0,
+                "def": 50.0,
+                "speed": 0.30000001192092898,
+                "attackSpeed": 5.0,
+                "seekRange": 2.0
+            },
+            "launchEnergyCost": 200,
+            "levels": [],
+            "unlockCost": 2500,
+            "unlockRequiredStage": -1,
+            "unlockAfterStageId": "stage_3",
+            "maxDeploymentsPerRound": 1,
+            "spawnInStartingFormation": false
+        }
+    ],
+    "cannons": [
+        {
+            "id": "cannon",
+            "displayName": "Standard Cannon",
+            "unlockCost": 0,
+            "fireRate": 0.04500000178813934,
+            "launchSpeed": 6.0,
+            "launchLift": 2.200000047683716,
+            "spread": 0.09000000357627869,
+            "ammoCapacity": 130,
+            "mobsPerShot": 1,
+            "mobScale": 1.0,
+            "energyCapacity": 100.0,
+            "energyRegenPerSecond": 8.0,
+            "rushUnitCount": 3,
+            "playerHealthBonus": 30,
+            "levels": [
+                {
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1,
+                    "fireRateBonus": -0.0030000023543834688,
+                    "launchSpeedBonus": 0.34999990463256838,
+                    "launchLiftBonus": 0.09999990463256836,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 8,
+                    "mobsPerShotBonus": 0,
+                    "mobScaleBonus": 0.0,
+                    "rushUnitCountBonus": 0,
+                    "energyCapacityBonus": 10.0,
+                    "energyRegenPerSecondBonus": 0.5,
+                    "playerHealthBonusBonus": 5
+                },
+                {
+                    "unlockCost": 220,
+                    "requiredStageIndex": -1,
+                    "fireRateBonus": -0.00299999862909317,
+                    "launchSpeedBonus": 0.34999990463256838,
+                    "launchLiftBonus": 0.10000014305114746,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 10,
+                    "mobsPerShotBonus": 0,
+                    "mobScaleBonus": 0.0,
+                    "rushUnitCountBonus": 1,
+                    "energyCapacityBonus": 10.0,
+                    "energyRegenPerSecondBonus": 0.5,
+                    "playerHealthBonusBonus": 5
+                },
+                {
+                    "unlockCost": 400,
+                    "requiredStageIndex": 1,
+                    "fireRateBonus": -0.0040000006556510929,
+                    "launchSpeedBonus": 0.4500002861022949,
+                    "launchLiftBonus": 0.11999988555908203,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 12,
+                    "mobsPerShotBonus": 0,
+                    "mobScaleBonus": 0.04999995231628418,
+                    "rushUnitCountBonus": 0,
+                    "energyCapacityBonus": 15.0,
+                    "energyRegenPerSecondBonus": 0.5,
+                    "playerHealthBonusBonus": 5
+                },
+                {
+                    "unlockCost": 700,
+                    "requiredStageIndex": 1,
+                    "fireRateBonus": -0.0040000006556510929,
+                    "launchSpeedBonus": 0.5,
+                    "launchLiftBonus": 0.12000012397766113,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 15,
+                    "mobsPerShotBonus": 1,
+                    "mobScaleBonus": 0.0,
+                    "rushUnitCountBonus": 1,
+                    "energyCapacityBonus": 15.0,
+                    "energyRegenPerSecondBonus": 0.5,
+                    "playerHealthBonusBonus": 10
+                },
+                {
+                    "unlockCost": 1100,
+                    "requiredStageIndex": 1,
+                    "fireRateBonus": -0.004999998956918716,
+                    "launchSpeedBonus": 0.5999999046325684,
+                    "launchLiftBonus": 0.14999985694885255,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 20,
+                    "mobsPerShotBonus": 0,
+                    "mobScaleBonus": 0.08000004291534424,
+                    "rushUnitCountBonus": 1,
+                    "energyCapacityBonus": 20.0,
+                    "energyRegenPerSecondBonus": 1.0,
+                    "playerHealthBonusBonus": 10
+                }
+            ]
+        },
+        {
+            "id": "heavy",
+            "displayName": "Heavy Cannon",
+            "unlockCost": 800,
+            "fireRate": 0.08500000089406967,
+            "launchSpeed": 5.199999809265137,
+            "launchLift": 2.5999999046325685,
+            "spread": 0.05999999865889549,
+            "ammoCapacity": 150,
+            "mobsPerShot": 2,
+            "mobScale": 1.25,
+            "energyCapacity": 180.0,
+            "energyRegenPerSecond": 7.0,
+            "rushUnitCount": 4,
+            "playerHealthBonus": 50,
+            "levels": [
+                {
+                    "unlockCost": 260,
+                    "requiredStageIndex": -1,
+                    "fireRateBonus": -0.005000002682209015,
+                    "launchSpeedBonus": 0.3000001907348633,
+                    "launchLiftBonus": 0.10000014305114746,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 10,
+                    "mobsPerShotBonus": 0,
+                    "mobScaleBonus": 0.029999971389770509,
+                    "rushUnitCountBonus": 1,
+                    "energyCapacityBonus": 10.0,
+                    "energyRegenPerSecondBonus": 0.5,
+                    "playerHealthBonusBonus": 10
+                },
+                {
+                    "unlockCost": 520,
+                    "requiredStageIndex": 1,
+                    "fireRateBonus": -0.00599999725818634,
+                    "launchSpeedBonus": 0.40000009536743166,
+                    "launchLiftBonus": 0.09999990463256836,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 12,
+                    "mobsPerShotBonus": 1,
+                    "mobScaleBonus": 0.040000081062316897,
+                    "rushUnitCountBonus": 1,
+                    "energyCapacityBonus": 15.0,
+                    "energyRegenPerSecondBonus": 0.5,
+                    "playerHealthBonusBonus": 12
+                },
+                {
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1,
+                    "fireRateBonus": -0.006999999284744263,
+                    "launchSpeedBonus": 0.5,
+                    "launchLiftBonus": 0.10000014305114746,
+                    "spreadBonus": -0.009999997913837433,
+                    "ammoCapacityBonus": 14,
+                    "mobsPerShotBonus": 0,
+                    "mobScaleBonus": 0.059999942779541019,
+                    "rushUnitCountBonus": 1,
+                    "energyCapacityBonus": 20.0,
+                    "energyRegenPerSecondBonus": 1.0,
+                    "playerHealthBonusBonus": 13
+                },
+                {
+                    "unlockCost": 1400,
+                    "requiredStageIndex": 1,
+                    "fireRateBonus": -0.009000003337860108,
+                    "launchSpeedBonus": 0.5999999046325684,
+                    "launchLiftBonus": 0.09999990463256836,
+                    "spreadBonus": 0.0,
+                    "ammoCapacityBonus": 16,
+                    "mobsPerShotBonus": 1,
+                    "mobScaleBonus": 0.0700000524520874,
+                    "rushUnitCountBonus": 1,
+                    "energyCapacityBonus": 25.0,
+                    "energyRegenPerSecondBonus": 1.0,
+                    "playerHealthBonusBonus": 15
+                }
+            ]
+        }
+    ],
+    "abilities": [
+        {
+            "id": "freeze",
+            "displayName": "Freeze",
+            "unlockCost": 0,
+            "unlockRequiredStage": -1,
+            "baseTuning": {
+                "charges": 2,
+                "duration": 4.0,
+                "radius": 12.0,
+                "mobDamageFraction": 0.0,
+                "mobDamage": 0.0,
+                "minimumDamage": 0.0,
+                "castleDamage": 0
+            },
+            "levels": [
+                {
+                    "tuning": {
+                        "charges": 2,
+                        "duration": 4.5,
+                        "radius": 12.0,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 0.0,
+                        "castleDamage": 0
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "tuning": {
+                        "charges": 3,
+                        "duration": 4.5,
+                        "radius": 12.0,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 0.0,
+                        "castleDamage": 0
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "tuning": {
+                        "charges": 3,
+                        "duration": 5.0,
+                        "radius": 12.0,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 0.0,
+                        "castleDamage": 0
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "tuning": {
+                        "charges": 3,
+                        "duration": 5.5,
+                        "radius": 12.0,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 0.0,
+                        "castleDamage": 0
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "tuning": {
+                        "charges": 4,
+                        "duration": 6.0,
+                        "radius": 12.0,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 0.0,
+                        "castleDamage": 0
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ]
+        },
+        {
+            "id": "fireball",
+            "displayName": "Fireball",
+            "unlockCost": 500,
+            "unlockRequiredStage": -1,
+            "baseTuning": {
+                "charges": 2,
+                "duration": 2.5,
+                "radius": 3.200000047683716,
+                "mobDamageFraction": 0.0,
+                "mobDamage": 50.0,
+                "minimumDamage": 8.0,
+                "castleDamage": 90
+            },
+            "levels": [
+                {
+                    "tuning": {
+                        "charges": 2,
+                        "duration": 2.5,
+                        "radius": 3.4000000953674318,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 60.0,
+                        "minimumDamage": 10.0,
+                        "castleDamage": 110
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "tuning": {
+                        "charges": 3,
+                        "duration": 2.5,
+                        "radius": 3.5999999046325685,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 70.0,
+                        "minimumDamage": 12.0,
+                        "castleDamage": 135
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "tuning": {
+                        "charges": 3,
+                        "duration": 2.5999999046325685,
+                        "radius": 4.0,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 80.0,
+                        "minimumDamage": 15.0,
+                        "castleDamage": 165
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "tuning": {
+                        "charges": 3,
+                        "duration": 2.5999999046325685,
+                        "radius": 4.300000190734863,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 85.0,
+                        "minimumDamage": 17.0,
+                        "castleDamage": 200
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "tuning": {
+                        "charges": 4,
+                        "duration": 2.700000047683716,
+                        "radius": 4.599999904632568,
+                        "mobDamageFraction": 0.0,
+                        "mobDamage": 90.0,
+                        "minimumDamage": 20.0,
+                        "castleDamage": 240
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ]
+        },
+        {
+            "id": "lightning",
+            "displayName": "Lightning",
+            "unlockCost": 1500,
+            "unlockRequiredStage": -1,
+            "baseTuning": {
+                "charges": 1,
+                "duration": 1.5,
+                "radius": 2.4000000953674318,
+                "mobDamageFraction": 0.44999998807907107,
+                "mobDamage": 0.0,
+                "minimumDamage": 20.0,
+                "castleDamage": 180
+            },
+            "levels": [
+                {
+                    "tuning": {
+                        "charges": 1,
+                        "duration": 1.5,
+                        "radius": 2.5,
+                        "mobDamageFraction": 0.47999998927116396,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 25.0,
+                        "castleDamage": 230
+                    },
+                    "unlockCost": 100,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "tuning": {
+                        "charges": 2,
+                        "duration": 1.600000023841858,
+                        "radius": 2.700000047683716,
+                        "mobDamageFraction": 0.5199999809265137,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 30.0,
+                        "castleDamage": 290
+                    },
+                    "unlockCost": 250,
+                    "requiredStageIndex": -1
+                },
+                {
+                    "tuning": {
+                        "charges": 2,
+                        "duration": 1.600000023841858,
+                        "radius": 2.9000000953674318,
+                        "mobDamageFraction": 0.5600000023841858,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 35.0,
+                        "castleDamage": 360
+                    },
+                    "unlockCost": 500,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "tuning": {
+                        "charges": 2,
+                        "duration": 1.7000000476837159,
+                        "radius": 3.0,
+                        "mobDamageFraction": 0.6000000238418579,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 40.0,
+                        "castleDamage": 440
+                    },
+                    "unlockCost": 900,
+                    "requiredStageIndex": 1
+                },
+                {
+                    "tuning": {
+                        "charges": 3,
+                        "duration": 1.7000000476837159,
+                        "radius": 3.200000047683716,
+                        "mobDamageFraction": 0.6499999761581421,
+                        "mobDamage": 0.0,
+                        "minimumDamage": 45.0,
+                        "castleDamage": 540
+                    },
+                    "unlockCost": 1500,
+                    "requiredStageIndex": 1
+                }
+            ]
+        }
+    ],
+    "rewardRules": {
+        "repeatRewardRate": 0.25,
+        "starBonusRate": 0.0,
+        "firstWinOfDayBonus": 0.0,
+        "maxCoinsPerRound": 10
+    }
+}
