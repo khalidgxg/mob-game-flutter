@@ -191,8 +191,16 @@ class BattleRound {
 
     crowd.update(mobs);
 
-    for (final m in mobs) {
-      _stepMob(m, dt);
+    // Indexed, not `for (final m in mobs)`: stepping a mob can spawn new
+    // ones mid-loop (a gate clone, an ejected-by-cap-reached deferral does
+    // not apply here since spawnMob is what enforces the cap) by appending
+    // to this same `mobs` list, which a `for-in`'s iterator treats as
+    // concurrent modification and throws on. Capturing the length once
+    // means anything spawned this step is simply left to start moving next
+    // step, matching ordinary spawn-then-next-frame semantics.
+    final stepCount = mobs.length;
+    for (var i = 0; i < stepCount; i++) {
+      _stepMob(mobs[i], dt);
     }
 
     for (final t in towers) {

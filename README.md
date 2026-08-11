@@ -55,6 +55,22 @@ numbers (16 run / 10 attack frames, 160px tiles, shadows as ground decals —
 the decal drawing itself is Phase 4 scope, since it touches
 `CrowdRenderer`).
 
+Phase 4 wires it all into an actual playable scene: `apps/poc_battle/lib/stage1_game.dart`
+drives a real `BattleRound` (real Stage 1 towers, base, cannon, ability
+tuning, opening formation, gate) with real tap/drag input, drawn through
+`BattleSceneRenderer` — the batched crowd draw calls and the real castle/gate
+artwork, correctly depth-sorted, with ground shadow decals. It's the first
+screen in the rebuild where the simulation you can fight is the object the
+picture is drawn from, reachable at `?preview=stage1`. Two real bugs were
+found and fixed getting here: missing mob-vs-mob attack damage (see Phase 2's
+note above) and a "concurrent modification during iteration" crash in
+`BattleRound.step()` from a gate-spawned clone being appended to the list
+being iterated. See the migration plan's Phase 4 progress note for a known,
+unresolved cosmetic issue: this environment's headless screenshot pipeline
+letterboxes the game surface and won't paint the HUD overlay on top of it,
+for reasons not yet root-caused — it does not affect the simulation or scene
+rendering themselves, both confirmed correct from the battle content.
+
 124 tests currently pass across the three packages combined (`dart test` in
 each).
 

@@ -288,6 +288,57 @@ preview scene (only Stage 1 was rendered for approval). Scenery props
 **Gate:** a full stage is playable on device at target frame rate, and reads
 correctly against a Unity screenshot of the same stage.
 
+**Progress:** `IsoProjection.fit()` ports `BattleCamera.Apply()`'s
+aspect-driven `orthographicSize` resolution into a `pixelsPerUnit` factory.
+`BattleSceneRenderer` (`apps/poc_battle/lib/battle_scene_renderer.dart`) is
+the unified renderer: it merges the batched crowd draw calls with individual
+structure draws (`StructurePlacement`), sorted by world Z, so castles/gate
+and mobs occlude each other correctly, and draws a ground shadow ellipse
+under every mob (the decal deferred from Phase 3). `stage1_game.dart` wires
+a real `BattleRound` — real Stage 1 tower healths (300/300/1500), real base
+(25 + 30 cannon bonus), real Standard Cannon and Freeze/Fireball tuning, the
+real 32/20 opening formation, and the real ×2 gate — into a `FlameGame`
+driven by actual tap/drag input (`TapCallbacks`/`DragCallbacks`, Flame
+1.35.1's current event API), with the aim direction solved algebraically as
+the inverse of the world→screen projection. This is the first screen in the
+rebuild where the simulation a player can fight is the same object the
+picture is drawn from. A real bug was found and fixed here: `BattleRound`
+lacked mob-vs-mob melee combat — a mob would clash with an enemy and freeze
+forever without ever dealing damage, because the C# `Update()`'s
+attack-timer block had never been ported to `Mob.updateCombatState()`; it's
+been added and moved to run before movement each tick, matching the C#
+order. A second real bug — "concurrent modification during iteration" in
+`BattleRound.step()`, from a gate-crossing mob's clone being appended to the
+same list being iterated — is also fixed (indexed loop over a captured
+length). 78/78 `mobrush_sim` tests pass, `dart analyze` is clean, and
+screenshots over both 8s and 20s confirm the battle progresses correctly:
+crowds engage, cross the gate, and assault the castle with correct
+depth-sorted rendering.
+
+**Known issue, not yet root-caused:** in this environment's headless
+Chromium/CanvasKit/SwiftShader screenshot pipeline, the `stage1` scene's
+`GameWidget` renders letterboxed (a narrow vertical strip) instead of
+filling the viewport, and no `Positioned` sibling in the surrounding `Stack`
+— including a bare, unconditional `Text` used to rule out
+`StreamBuilder`/timing causes — paints on top of it, even though the
+identical `Stack` pattern renders correctly on the sibling `BattleScreen`
+(its `_Telemetry` HUD is confirmed working in earlier screenshots). This
+does not affect the underlying simulation or the scene's own rendering,
+both confirmed correct from the battle content itself; it needs a real
+device or a non-headless browser to determine whether it is specific to
+this screenshot pipeline. Documented in `apps/poc_battle/lib/main.dart` on
+`Stage1Screen`.
+
+**Not yet done:** the HUD strip is deliberately minimal (energy, ammo,
+outcome, base/tower health as text) — no ability buttons or wave tracker
+yet, full parity with `Hud.cs` (914 + 317 lines) is separate work. No VFX
+(`Vfx`, `AbilityVfx`, `FloatingText`, `WorldHpBar`, `GateLabelEffect`).
+Stage 2/3 structure artwork is modeled in `structure_artwork.dart` but not
+wired into a playable scene, only Stage 1. Content is still the hardcoded
+`stage1_content.dart` stand-in, not loaded from a real `content.json`
+export — `LevelBuilder`'s JSON-driven stage assembly remains Phase 1/5
+follow-up work. No on-device or real-browser frame-rate measurement yet.
+
 ### Phase 5 — Meta screens
 
 The largest line count, the lowest risk, the biggest simplification.

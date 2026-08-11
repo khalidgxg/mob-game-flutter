@@ -21,8 +21,9 @@ class IsoProjection {
   final double pitchDegrees;
 
   /// Mirrors what `orthographicSize` resolves to — how many screen pixels one
-  /// world unit occupies. The real camera derives this from the live aspect so
-  /// the same lane width is always framed; this PoC takes it as a constant.
+  /// world unit occupies. [fit] derives this the same way the live camera
+  /// does; a bare constant here is only for call sites (mostly tests) that
+  /// don't care about matching a real screen size.
   final double pixelsPerUnit;
 
   double get _pitch => pitchDegrees * math.pi / 180.0;
@@ -40,4 +41,43 @@ class IsoProjection {
   /// and, for a crowd of upright billboards on flat ground, exactly as
   /// correct — there is no geometry here that can interpenetrate.
   double depthKey(double worldZ) => worldZ;
+
+  /// Port of `BattleCamera.Apply()`'s `orthographicSize` resolution — the
+  /// same fit-to-aspect logic, producing the same `pixelsPerUnit` a device
+  /// with this screen size and the live game would agree on.
+  ///
+  /// One candidate keeps the lane width in frame; the other keeps its depth,
+  /// which is foreshortened by `sin(pitch)` on the way to the screen. The
+  /// larger of the two wins so neither axis is ever cropped, then a "tall
+  /// portrait guard" caps how far a very tall/narrow screen is allowed to
+  /// zoom out, without ever cropping the gameplay-critical width.
+  factory IsoProjection.fit({
+    required double screenWidth,
+    required double screenHeight,
+    double pitchDegrees = 45.0,
+    double laneHalfWidth = 9.15,
+    double minLaneDepth = 40.0,
+    double criticalGameplayHalfWidth = 6.6,
+    double maxPortraitOrthographicSize = 18.0,
+  }) {
+    final aspect = screenWidth > 0 ? screenWidth / screenHeight : 1.0;
+    final rad = pitchDegrees * math.pi / 180.0;
+    final sin = math.max(0.05, math.sin(rad));
+
+    final sizeForWidth = laneHalfWidth / aspect;
+    final sizeForDepth = minLaneDepth * sin * 0.5;
+    final requestedSize = math.max(sizeForWidth, sizeForDepth);
+
+    final criticalSize = math.max(1.0, criticalGameplayHalfWidth) / aspect;
+    final cappedSize =
+        math.min(requestedSize, math.max(1.0, maxPortraitOrthographicSize));
+
+    final orthographicSize = math.max(criticalSize, cappedSize);
+
+    // orthographicSize is the half-height in world units; screenHeight
+    // pixels span twice that.
+    final pixelsPerUnit = screenHeight / (orthographicSize * 2.0);
+
+    return IsoProjection(pitchDegrees: pitchDegrees, pixelsPerUnit: pixelsPerUnit);
+  }
 }
