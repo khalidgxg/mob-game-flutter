@@ -53,7 +53,13 @@ class BattleGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    atlas = await CharacterAtlas.generate();
+    atlas = await CharacterAtlas.load();
+    // ignore: avoid_print
+    print(
+      atlas.isRealBake
+          ? 'CrowdSpriteBaker export loaded — showing real character bakes.'
+          : 'No export found at assets/crowd_export/ — showing placeholder figures.',
+    );
     sim = BattleSim(maxMobs: 4000);
 
     final origin = ui.Offset(size.x / 2, size.y * 0.62);

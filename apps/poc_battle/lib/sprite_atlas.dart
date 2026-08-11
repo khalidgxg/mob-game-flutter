@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
+
+import 'package:flutter/services.dart' show rootBundle;
 
 /// A single texture holding every animation frame for every character.
 ///
@@ -16,7 +20,14 @@ import 'dart:ui' as ui;
 /// pushed from one texture per frame — and that number depends on the frame
 /// count and atlas size, not on what the pixels depict.
 class CharacterAtlas {
-  CharacterAtlas._(this.image, this.frames, this.frameWidth, this.frameHeight);
+  CharacterAtlas._(
+    this.image,
+    this.frames,
+    this.frameWidth,
+    this.frameHeight, {
+    this.isRealBake = false,
+    Map<String, _ClipRange>? clipRanges,
+  }) : _clipRanges = clipRanges ?? const {};
 
   final ui.Image image;
 
@@ -27,6 +38,13 @@ class CharacterAtlas {
 
   final int frameWidth;
   final int frameHeight;
+
+  /// True when this atlas came from `CrowdSpriteBaker` in mobGame rather than
+  /// the procedural placeholder. The Phase 0 gate is a judgement call about
+  /// this specific case, so the PoC surfaces which one is on screen.
+  final bool isRealBake;
+
+  final Map<String, _ClipRange> _clipRanges;
 
   static const int runFrames = 16;
   static const int attackFrames = 8;
@@ -42,11 +60,81 @@ class CharacterAtlas {
     'max',
   ];
 
-  int runFrame(int character, int frame) =>
-      character * framesPerCharacter + (frame % runFrames);
+  int runFrame(int character, int frame) {
+    final range = _clipRanges['${characters[character]}/run'];
+    if (range != null) return range.start + frame % range.length;
+    return character * framesPerCharacter + (frame % runFrames);
+  }
 
-  int attackFrame(int character, int frame) =>
-      character * framesPerCharacter + runFrames + (frame % attackFrames);
+  int attackFrame(int character, int frame) {
+    final range = _clipRanges['${characters[character]}/attack'];
+    if (range != null) return range.start + frame % range.length;
+    return character * framesPerCharacter + runFrames + (frame % attackFrames);
+  }
+
+  /// Loads `CrowdSpriteBaker`'s real export if it was copied into
+  /// `assets/crowd_export/`, otherwise falls back to the procedural
+  /// placeholder. This is the switch Phase 0 exists to flip: run once with
+  /// the placeholder to validate throughput, once with a real bake to
+  /// validate the look.
+  static Future<CharacterAtlas> load() async {
+    try {
+      final manifestJson = await rootBundle.loadString(
+        'assets/crowd_export/atlas.json',
+      );
+      final bytes = await rootBundle.load('assets/crowd_export/atlas.png');
+      return _fromExport(manifestJson, bytes.buffer.asUint8List());
+    } catch (_) {
+      return generate();
+    }
+  }
+
+  static Future<CharacterAtlas> _fromExport(
+    String manifestJson,
+    Uint8List pngBytes,
+  ) async {
+    final manifest = jsonDecode(manifestJson) as Map<String, dynamic>;
+    final codec = await ui.instantiateImageCodec(pngBytes);
+    final frameInfo = await codec.getNextFrame();
+    final image = frameInfo.image;
+
+    final rects = <ui.Rect>[];
+    final ranges = <String, _ClipRange>{};
+    final rawFrames = (manifest['frames'] as List).cast<Map<String, dynamic>>();
+
+    // The baker writes frames in character-then-clip order, so grouping by
+    // (characterId, clip) recovers contiguous ranges without needing the
+    // export to declare them explicitly.
+    String? currentKey;
+    var rangeStart = 0;
+    for (var i = 0; i < rawFrames.length; i++) {
+      final f = rawFrames[i];
+      rects.add(
+        ui.Rect.fromLTWH(
+          (f['x'] as num).toDouble(),
+          (f['y'] as num).toDouble(),
+          (f['w'] as num).toDouble(),
+          (f['h'] as num).toDouble(),
+        ),
+      );
+      final key = '${f['characterId']}/${f['clip']}';
+      if (key != currentKey) {
+        currentKey = key;
+        rangeStart = i;
+      }
+      ranges[key] = _ClipRange(start: rangeStart, length: i - rangeStart + 1);
+    }
+
+    final tile = (manifest['tileSize'] as num).toInt();
+    return CharacterAtlas._(
+      image,
+      rects,
+      tile,
+      tile,
+      isRealBake: true,
+      clipRanges: ranges,
+    );
+  }
 
   /// Builds the stand-in sheet at the dimensions the real bake will use.
   static Future<CharacterAtlas> generate({
@@ -187,4 +275,10 @@ class CharacterAtlas {
       dark,
     );
   }
+}
+
+class _ClipRange {
+  const _ClipRange({required this.start, required this.length});
+  final int start;
+  final int length;
 }
