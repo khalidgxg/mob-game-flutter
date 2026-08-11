@@ -138,6 +138,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  mobrush_save:
+    dependency: "direct main"
+    description:
+      path: "../../packages/mobrush_save"
+      relative: true
+    source: path
+    version: "0.1.0"
   mobrush_sim:
     dependency: "direct main"
     description:

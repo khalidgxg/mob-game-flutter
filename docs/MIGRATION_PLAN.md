@@ -359,6 +359,34 @@ The largest line count, the lowest risk, the biggest simplification.
 **Gate:** every screen navigable, progression persisting across restarts, and
 each screen reviewed against its current Unity screenshot.
 
+**Progress:** `apps/poc_battle/lib/home_screen.dart` ports `HomeMenu.cs`'s
+five bands (header, title, campaign hero, BATTLE CTA, bottom nav) as
+ordinary `Column`/`Expanded` flex layout instead of hand-tuned
+`SetNormalizedRect` calls — the flex weights (55/62/572/97/118) are kept
+proportional to the C#'s own `HeaderTop`/`TitleTop`/`HeroTop`/`PlayTop`/
+`NavTop` constants, so the vertical rhythm is the same, just expressed in
+Flutter's own layout system instead of being reimplemented by hand.
+`SafeArea` replaces `SafeAreaFitter`. It reads real `PlayerProfile` fields
+(level, currency, gems, stage stars) from `mobrush_save`, and the BATTLE
+button and nav's BATTLE tab both push the real Stage 1 playable scene
+(`Stage1Screen`) built in Phase 4. `main.dart`'s default route (with no
+query string) is now this Home screen — `?preview=picker` still reaches
+the raw scene picker if needed for debugging.
+
+**Not yet done:** no persistence — the profile is a fresh in-memory
+`PlayerProfile` each launch, not loaded from device storage the way
+`ProfileService` does live; wiring `mobrush_save`'s (de)serialization to
+actual file I/O is separate follow-up work. `HomeMenu.cs`'s settings
+modal only shows a placeholder dialog — sound toggle, How To Play, and the
+secret-code panel aren't ported. SHOP and MAP nav tabs are stubs (a
+snackbar) since `ShopScreen` and `CampaignMapScreen` haven't been started.
+Home's own generated art (castle hero, wordmark, icon set) isn't baked —
+this reuses Stage 1's real castle PNG and Material icons as an honest
+placeholder, matching the spirit of `HomeMenu.BuildCastleArt`'s geometric
+fallback for a missing `Resources/Home/CastleHero`. `VISUAL_IDENTITY.md`
+is not yet encoded as `ThemeData`/design tokens — colours are still
+hardcoded per-screen the same way the Unity presentation code was.
+
 ### Phase 6 — Audio, polish, release
 
 - Port `Sfx.cs` (394 lines, 20 named cues) onto a Flutter audio package,

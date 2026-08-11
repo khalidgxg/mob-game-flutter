@@ -2,6 +2,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'battle_game.dart';
+import 'home_screen.dart';
 import 'stage1_game.dart';
 import 'structure_preview_game.dart';
 
@@ -30,7 +31,9 @@ class PocApp extends StatelessWidget {
         'crowd' => const BattleScreen(),
         // The APK build has no query string to read, so on-device testing
         // needs an in-app picker instead of the web-only ?preview= links.
-        _ => const _ScenePicker(),
+        'picker' => const _ScenePicker(),
+        // Phase 5: HomeMenu.cs's port is the real entry point now.
+        _ => const HomeScreen(),
       },
     );
   }

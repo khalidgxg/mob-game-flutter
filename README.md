@@ -73,8 +73,16 @@ bug. What the device did confirm as real: the lane doesn't fill the
 viewport, since `GroundRenderer` draws only the lane quad with no
 background art behind it — expected for a PoC proving the simulation and
 renderer agree, not a finished frame. See the migration plan's Phase 4
-progress note for detail. Because an installed APK has no URL bar for
-`?preview=...`, the app now opens on an in-app scene picker instead.
+progress note for detail.
+
+Phase 5 starts on the meta screens: `apps/poc_battle/lib/home_screen.dart`
+ports `HomeMenu.cs`'s five bands (header, title, campaign hero, BATTLE CTA,
+bottom nav) onto plain Flutter `Column`/`Expanded` layout, reading real
+`PlayerProfile` fields from `mobrush_save` and pushing the real Stage 1
+scene from Phase 4 on BATTLE. It's now the app's default screen (`?preview=
+picker` still reaches the raw scene picker for debugging). Shop, campaign
+map, and real save persistence haven't started — see the migration plan's
+Phase 5 progress note for the full list of what's still a stub.
 
 124 tests currently pass across the three packages combined (`dart test` in
 each).
