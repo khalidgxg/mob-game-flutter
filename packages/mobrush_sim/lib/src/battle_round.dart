@@ -12,6 +12,25 @@ import 'player_base.dart';
 
 enum RoundOutcome { ongoing, win, lose }
 
+/// Something worth reacting to outside the simulation — in practice, a
+/// sound. `Sfx.Play` is called inline from `Game.cs`/`Mob.cs` in the Unity
+/// build; this package stays engine-independent, so it reports instead and
+/// lets a presentation layer decide what (if anything) to do.
+enum RoundEvent {
+  /// A player mob crossed a gate. [BattleRound.lastGateMultiplier] carries
+  /// the gate's multiplier, which the live game uses to pitch its chime up.
+  gateCrossed,
+
+  /// A mob landed a blow on an enemy tower.
+  towerHit,
+
+  /// A tower fell.
+  towerDestroyed,
+
+  /// An enemy reached the player's own base and hit it.
+  baseHit,
+}
+
 /// One playable round, assembled from the five systems Phase 2 ported
 /// separately and driven start-to-finish by a scripted caller — the
 /// orchestrator §4's Phase 2 gate asks for. It owns exactly the ordering
@@ -67,6 +86,16 @@ class BattleRound {
 
   RoundOutcome outcome = RoundOutcome.ongoing;
   double elapsedSeconds = 0;
+
+  /// Notified as the round runs. Optional: nothing in the simulation
+  /// depends on anyone listening.
+  void Function(RoundEvent event)? onEvent;
+
+  /// The multiplier of the most recent gate crossing, for a listener that
+  /// wants to scale its reaction to it.
+  int lastGateMultiplier = 1;
+
+  void _emit(RoundEvent event) => onEvent?.call(event);
 
   int _nextMobIndex = 0;
 
@@ -330,7 +359,16 @@ class BattleRound {
     if (m.structAttackTimer >= m.attackCooldown) {
       m.structAttackTimer = 0;
       final dmg = math.max(1, m.atk.round());
+      final wasAlive = target.alive;
       target.takeDamage(dmg);
+      // An enemy mob can only be attacking the player's base, and a player
+      // mob only a tower — the caller's own team split, so the event kind
+      // follows from the attacker rather than needing a type check.
+      if (wasAlive && !target.alive) {
+        _emit(RoundEvent.towerDestroyed);
+      } else {
+        _emit(m.team == 1 ? RoundEvent.baseHit : RoundEvent.towerHit);
+      }
     }
   }
 
@@ -375,6 +413,8 @@ class BattleRound {
 
   void _applyGate(Gate g, Mob m) {
     m.passedGates.add(g);
+    lastGateMultiplier = g.multiplier;
+    _emit(RoundEvent.gateCrossed);
     final characterId = _characterIdFor(m);
     final canGenerate = _canGenerateCharacter(characterId);
     final capacityRemaining = _maxMobs - (mobs.length - _deadCount());

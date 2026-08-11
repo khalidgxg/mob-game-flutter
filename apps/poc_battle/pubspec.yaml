@@ -17,6 +17,7 @@ dependencies:
   mobrush_save:
     path: ../../packages/mobrush_save
   shared_preferences: ^2.3.2
+  audioplayers: ^6.7.1
 
 dev_dependencies:
   flutter_test:
@@ -36,3 +37,5 @@ flutter:
     - assets/campaign/
     - assets/content/
     - assets/ground/
+    - assets/audio/sfx/
+    - assets/audio/music/

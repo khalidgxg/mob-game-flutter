@@ -12,6 +12,7 @@ import 'battle_scene_renderer.dart';
 import 'game_content.dart';
 import 'ground_renderer.dart';
 import 'iso.dart';
+import 'sfx.dart';
 import 'sprite_atlas.dart';
 import 'structure_artwork.dart';
 import 'structure_renderer.dart';
@@ -184,6 +185,7 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       characterLevels: characterLevels,
     );
 
+    round.onEvent = _onRoundEvent;
     _spawnStartingFormation(characterId);
 
     final structures = <StructurePlacement>[];
@@ -231,6 +233,23 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
 
     _frameWatch.start();
     simReady = true;
+  }
+
+  /// Maps the simulation's events onto `Sfx.cs`'s cue names. The gate
+  /// pitches its chime up with the multiplier, which is the one place the
+  /// live game varies a cue deliberately rather than randomly.
+  void _onRoundEvent(RoundEvent event) {
+    switch (event) {
+      case RoundEvent.gateCrossed:
+        Sfx.instance.play('gate',
+            pitch: 1.0 + 0.06 * (round.lastGateMultiplier - 1).clamp(0, 6));
+      case RoundEvent.towerHit:
+        Sfx.instance.play('hit');
+      case RoundEvent.towerDestroyed:
+        Sfx.instance.play('destroy');
+      case RoundEvent.baseHit:
+        Sfx.instance.play('baseHit');
+    }
   }
 
   void _spawnStartingFormation(String characterId) {
@@ -300,7 +319,14 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       ..reset()
       ..start();
 
-    if (_firing && battleStarted) round.aimAndFire(_aimX, _aimZ);
+    if (_firing && battleStarted) {
+      final before = round.mobs.length;
+      round.aimAndFire(_aimX, _aimZ);
+      // Only cue the cannon when a shot actually left the barrel — ammo,
+      // energy and the fire-rate cooldown can all refuse one, and a click
+      // on every frame of a held drag would be unbearable.
+      if (round.mobs.length > before) Sfx.instance.play('shoot');
+    }
 
     final sw = Stopwatch()..start();
     round.advance(dt);

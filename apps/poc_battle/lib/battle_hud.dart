@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobrush_save/mobrush_save.dart';
 import 'package:mobrush_sim/mobrush_sim.dart';
 
+import 'sfx.dart';
 import 'stage1_game.dart';
 import 'ui_theme.dart';
 
@@ -64,6 +65,7 @@ class _BattleHudState extends State<BattleHud> {
 
   void _tryBattleAction() {
     final game = widget.game;
+    Sfx.instance.play('battleClick');
     if (!game.battleStarted) {
       game.startBattle();
       _showHint('BATTLE STARTED', _goldLight);
@@ -74,8 +76,16 @@ class _BattleHudState extends State<BattleHud> {
   }
 
   void _tryAbility(Ability ability) {
+    Sfx.instance.play('click');
     final result = widget.game.tryAbility(ability);
     final ok = result != 'NO VALID TARGET' && result != 'START THE BATTLE FIRST';
+    if (ok) {
+      Sfx.instance.play(switch (ability) {
+        Ability.freeze => 'freeze',
+        Ability.fireball => 'fireball',
+        Ability.lightning => 'lightning',
+      });
+    }
     _showHint(result, ok ? _goldLight : const Color(0xFFFF7057));
   }
 
@@ -134,7 +144,10 @@ class _BattleHudState extends State<BattleHud> {
 
   Widget _pauseButton() {
     return _framed(
-      onTap: _openPauseModal,
+      onTap: () {
+        Sfx.instance.play('click');
+        _openPauseModal();
+      },
       child: const Padding(
         padding: EdgeInsets.all(10),
         child: Icon(Icons.pause, color: Colors.white, size: 22),

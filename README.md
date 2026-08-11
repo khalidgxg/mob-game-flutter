@@ -84,14 +84,23 @@ Skills shop reading `content.json` — the actual export from
 `ContentExporter.cs`, run for real and copied into `assets/content/` — with
 working buy/upgrade against a `PlayerProfile` persisted through
 `SharedPreferences` (`profile_service.dart`, the Flutter equivalent of
-`LocalJsonSaveStore.cs`). `campaign_map_screen.dart` is a simplified stand-in
-for the real illustrated campaign atlas, which isn't in the repo yet. It's
+`LocalJsonSaveStore.cs`). `campaign_map_screen.dart` draws the real
+illustrated campaign atlas copied from `Assets/Resources/Campaign/`. It's
 all the app's default screen now (`?preview=picker` still reaches the raw
-scene picker for debugging). See the migration plan's Phase 5 progress note
-for the full list of what's still a stub (settings, loadout picker, wiring
-a purchase into the live battle).
+scene picker for debugging). Purchases reach the battlefield: `EQUIP`
+writes the loadout, and `BattleRound` resolves purchased character levels
+when spawning, so an upgrade changes what actually walks onto the lane.
 
-124 tests currently pass across the three packages combined (`dart test` in
+Phase 6 starts with audio. `lib/sfx.dart` ports `Sfx.cs` onto
+`audioplayers` — same cue table, same ten-voice round-robin, same
+cross-faded menu/battle beds. No audio was generated: eleven cues and both
+beds are the authored mp3s from `Assets/Resources/Audio/`, and the five
+that Unity synthesises at runtime are baked from the C#'s own DSP by
+`tools/bake_procedural_sfx.dart`. See the migration plan's Phase 6 note
+for what's deliberately left out (the `march` bed, on-device performance
+pass, iOS, signing).
+
+128 tests currently pass across the three packages combined (`dart test` in
 each).
 
 The split between those two packages is the whole architecture in miniature.

@@ -4,6 +4,7 @@ import 'package:mobrush_save/mobrush_save.dart';
 
 import 'game_content.dart';
 import 'profile_service.dart';
+import 'sfx.dart';
 import 'ui_theme.dart';
 
 /// Port of `ShopScreen` + its Characters/Abilities/Cannons partials
@@ -51,6 +52,7 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   void _mutate(void Function(PlayerProfile p) change) {
+    Sfx.instance.play('battleClick');
     setState(() => change(_profile!));
     _service.save(_profile!);
   }
@@ -135,7 +137,10 @@ class _ShopScreenState extends State<ShopScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),
           child: GlassPanel(
-            onTap: () => setState(() => _tab = t),
+            onTap: () {
+              Sfx.instance.play('click');
+              setState(() => _tab = t);
+            },
             active: active,
             radius: 20,
             rimColor: active ? MobRushTheme.gold : const Color(0x33FFFFFF),

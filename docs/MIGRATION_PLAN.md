@@ -434,6 +434,50 @@ screenshots, not off that document.
 **Gate:** signed release builds meeting the frame-rate target on the reference
 device, with `release-build-check`'s equivalent audit passing.
 
+**Progress — audio is ported.** `lib/sfx.dart` is `Sfx.cs` on
+`audioplayers`: the same cue table (per-cue cooldown, volume, pitch
+jitter, base pitch), the same ten-voice round-robin so a burst of cannon
+shots never cuts itself off, and the same two music beds at the C#'s own
+0.28 / 0.24 volumes.
+
+No new audio was generated. Eleven cues and both beds already existed as
+authored mp3s under `Assets/Resources/Audio/` and were copied across
+unchanged — reusing an approved project asset is the fal.ai policy's first
+priority. The other five (`shoot`, `pop`, `gate`, `win`, `lose`) are not
+files in Unity at all: `Sfx.Awake` synthesises them with DSP at startup and
+hands the samples to `AudioClip.Create`. Flutter's players take files, not
+sample buffers, so `tools/bake_procedural_sfx.dart` runs the same math at
+build time — a transliteration of `Shoot()`, `Pop()`, `GateChime()`,
+`WinJingle()` and `Arp()`, including `Build()`'s anti-click fade — and the
+resulting wavs are committed.
+
+Cues are wired to real events. `BattleRound` grew a `RoundEvent` hook
+(gate crossed, tower hit, tower destroyed, base hit) because the Unity
+build calls `Sfx.Play` inline from `Game.cs`/`Mob.cs` while this package
+stays engine-independent; it reports and lets the presentation layer
+decide. The gate pitches its chime up with its multiplier, the one place
+the live game varies a cue deliberately rather than randomly. The cannon
+cue fires only when a shot actually leaves the barrel, since ammo, energy
+and the fire-rate cooldown can each refuse one and a held drag would
+otherwise click every frame. `HomeMenu.ToggleSound` is ported as a real
+SOUND : ON/OFF in the settings modal.
+
+**Not yet done in Phase 6:** the `march` crowd loop is left out — the C#
+runs it as an always-on third bed, and adding a continuously-mixed layer
+without checking it in the real mix on a device is exactly what
+`AUDIO_IDENTIT.md` §11.1 says not to do. The C#'s per-frame 1.5/sec music
+cross-fade is approximated in coarser steps because `audioplayers` has no
+volume ramp and running one from Dart would mean a 60Hz platform-channel
+timer. No on-device performance pass, no iOS build, no store metadata,
+and no signing config — release builds are still debug-signed.
+
+Two cue durations sit outside `AUDIO_IDENTIT.md` §10's guideline ranges:
+`win` at 0.80 s and `lose` at 0.54 s against its 2–6 s and 2–5 s
+suggestions. These are the live game's own sounds, carried over as-is —
+lengthening them would be a redesign rather than a port, and §10 states
+the table is guidance rather than an automatic trimming target. Flagged
+here so the choice is visible rather than silent.
+
 ## 5. What changes, honestly
 
 Things that will not survive the rebuild, stated plainly so they are decisions

@@ -7,6 +7,7 @@ import 'package:mobrush_save/mobrush_save.dart';
 import 'campaign_map_screen.dart';
 import 'main.dart' show Stage1Screen;
 import 'profile_service.dart';
+import 'sfx.dart';
 import 'shop_screen.dart';
 import 'ui_theme.dart';
 
@@ -58,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _service.load().then((p) {
       if (mounted) setState(() => _profile = p);
     });
+    Sfx.instance.init().then((_) => Sfx.instance.setMenuMusic());
   }
 
   // Local aliases onto the shared palette, kept so the layout code below
@@ -469,6 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onNavTap(_NavTab tab) {
+    Sfx.instance.play('click');
     switch (tab) {
       case _NavTab.home:
         break;
@@ -506,25 +509,54 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (result != null && mounted) setState(() => _profile = result);
+    // Back on Home, the bed goes back to the menu theme — the C# does the
+    // same through `Sfx.SetMenuMusic` on its own Home transition.
+    Sfx.instance.setMenuMusic();
   }
 
   void _showSettings() {
+    Sfx.instance.play('click');
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1523),
-        title: const Text('SETTINGS', style: TextStyle(color: _titleBlue)),
-        content: const Text(
-          'Sound toggle, How to Play, and secret code entry are not ported '
-          'from HomeMenu.cs yet.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('CLOSE'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF0D1523),
+          title: const Text('SETTINGS',
+              style: TextStyle(color: _titleBlue, fontWeight: FontWeight.w900)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Port of `HomeMenu.ToggleSound`. Muting stops the beds rather
+              // than zeroing them, so a muted app isn't still decoding audio.
+              GameButton(
+                label: Sfx.instance.muted ? 'SOUND : OFF' : 'SOUND : ON',
+                gradient: Sfx.instance.muted
+                    ? MobRushTheme.glassFill
+                    : MobRushTheme.greenFill,
+                icon: Sfx.instance.muted ? Icons.volume_off : Icons.volume_up,
+                fontSize: 14,
+                onTap: () async {
+                  await Sfx.instance.setMuted(!Sfx.instance.muted);
+                  if (!Sfx.instance.muted) await Sfx.instance.setMenuMusic();
+                  setDialogState(() {});
+                },
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'How to Play and secret code entry are not ported from '
+                'HomeMenu.cs yet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('CLOSE'),
+            ),
+          ],
+        ),
       ),
     );
   }

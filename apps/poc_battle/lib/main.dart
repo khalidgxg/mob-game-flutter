@@ -9,10 +9,16 @@ import 'battle_hud.dart';
 import 'campaign_map_screen.dart';
 import 'home_screen.dart';
 import 'profile_service.dart';
+import 'sfx.dart';
 import 'stage1_game.dart';
 import 'structure_preview_game.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Allocate the voice pool before any screen can ask for a cue. Doing this
+  // from HomeScreen alone would leave the ?preview= routes, which bypass
+  // Home entirely, playing nothing.
+  Sfx.instance.init();
   runApp(const PocApp());
 }
 
@@ -240,6 +246,7 @@ class _Stage1ScreenState extends State<Stage1Screen> {
   static const _parSeconds = 90.0;
 
   Future<void> _handleOutcome(RoundOutcome outcome) async {
+    Sfx.instance.play(outcome == RoundOutcome.win ? 'win' : 'lose');
     final profile = widget.profile;
     RoundReward? reward;
     if (outcome == RoundOutcome.win && profile != null) {
