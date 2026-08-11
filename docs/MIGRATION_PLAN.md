@@ -397,18 +397,32 @@ now come from this same real catalog (`statsAtLevel(0)`/`tuningAtLevel(0)`)
 instead of hand-typed numbers, closing the gap `stage1_content.dart`
 (now deleted) stood in for.
 
-**Not yet done:** `HomeMenu.cs`'s settings modal only shows a placeholder
-dialog — sound toggle, How To Play, and the secret-code panel aren't
-ported. Map is a stub list, not the real illustrated atlas — see
-`campaign_map_screen.dart`'s own note on the missing background art. Shop
-has no roster/loadout picker ("BATTLE TEAM") and no character portrait art
-yet (Unity's are 3D renders, not baked to sprites the way the crowd atlas
-was), and a purchase doesn't yet affect the live battle — `Stage1Screen`
-always spawns the base-tier stats regardless of what's bought, since
-wiring a purchased loadout into `BattleRound` is separate follow-up work.
-`VISUAL_IDENTITY.md` is not yet encoded as `ThemeData`/design tokens —
-colours are still hardcoded per-screen the same way the Unity presentation
-code was.
+**Purchases now reach the battlefield.** This was the phase's biggest
+functional hole and is closed: `BattleRound.spawnMob` read `baseStats`
+unconditionally, so a bought character level never changed what walked
+onto the lane. It now resolves `statsAtLevel` against a `characterLevels`
+map — resolved *inside* `spawnMob`, because tower wave spawns and gate
+crowd clones both arrive there with no caller able to supply a level. The
+shop grew an `EQUIP` action writing `characterRoster`/`selectedCannonId`,
+and `Stage1Game` resolves the whole loadout from the profile: which cannon
+at what level, which character it deploys, and each ability's purchased
+tuning. Covered by three tests against the real authored Recruit rows.
+
+**One shared UI language.** `ui_theme.dart` holds the reference's glass +
+gold chrome (`GlassPanel`, `GameButton`) — translucent blue panels with a
+lit top hairline, gold rims, and a halo on whatever is selected. Home,
+Shop and the battle HUD all draw from it; each had been re-declaring its
+own near-miss copy of those colours.
+
+**Not yet done:** `HomeMenu.cs`'s settings modal is a placeholder dialog —
+sound toggle, How To Play, and the secret-code panel aren't ported. The
+Map draws the real campaign atlas but its node anchors are hand-read off
+the art rather than taken from `CampaignAtlasDefinition`. The shop equips
+one primary character, not `Hud.cs`'s 1-to-4 `BATTLE TEAM` row, and has no
+character portrait art (Unity's are 3D renders, not baked to sprites the
+way the crowd atlas was). `VISUAL_IDENTITY.md` is still not encoded as
+`ThemeData` tokens — `ui_theme.dart` was read off the reference
+screenshots, not off that document.
 
 ### Phase 6 — Audio, polish, release
 
