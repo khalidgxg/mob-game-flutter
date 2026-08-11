@@ -190,16 +190,45 @@ literally rather than intuitively. And `Cannon`'s aim clamp renormalizes a
 -0.35 — reproduced by hand-deriving Unity's exact double-`Vector3.Normalize()`
 sequence rather than assuming what the clamp "should" do.
 
-**Not yet done:** `Mob`'s structure-attack path (the piece that actually
-calls `EnemyTower.takeDamage`/`PlayerBase.takeDamage` during a battle —
-currently those methods exist and are tested in isolation, but nothing
-drives a mob to walk up and use them), `StageManager`/`LoadoutManager`
-(profile-facing progression orchestration), `LevelBuilder`'s JSON-driven
-stage assembly, and — the piece that actually closes this phase's gate —
-one `BattleSim`-level orchestrator that wires all of the above together into
-a single headless round a scripted input trace can play start to finish.
-What exists today is five independently correct, independently tested
-systems; they are not yet assembled into one.
+**Gate met.** `BattleRound` (`lib/src/battle_round.dart`) is the orchestrator
+this phase's gate asked for. It wires all five systems into one playable
+round: `Mob`'s structure-attack path (`structTarget`, engaging a tower's or
+the base's box, dealing damage on `attackCooldown`), gate-crossing detection
+(`Gate.wasCrossed`'s swept-segment test, now with real position/box fields),
+tower wave-spawning with real launch ballistics, cannon fire spawning mobs,
+ability effects reading/damaging the live mob and tower lists, and win/lose
+evaluation matching `Game.cs` exactly (all towers destroyed → win; base
+destroyed, or ammo empties and the 1.5s grace period elapses with towers
+still standing and no live player mobs → lose).
+`test/battle_round_integration_test.dart` plays a full Stage 1 round
+headlessly with real numbers (300/300/1500 tower health, Stage 1's authored
+32-player/20-enemy opening formation, `CannonLibrary`'s Standard Cannon row
+0) and asserts the win — this is the "a full authored stage plays start to
+finish" proof the gate names.
+
+Getting there surfaced a real gap, not just a test bug: **mob-vs-mob melee
+combat was never ported.** Two mobs would clash (`Mob.fight`, from Phase 0's
+`CrowdManager`) and lock into `combatTarget`, but nothing dealt damage or
+ever released the lock — found by tracing a headless run where a lone player
+mob froze in place forever instead of fighting and dying. Fixed by porting
+`Mob.Update()`'s `combatTarget` block (attack-timer damage on
+`attackCooldown`, disengage past the clash-distance-times-1.6 band) into
+`Mob.updateCombatState`, called from inside `Mob.tick` *before* the
+movement branch — matching the C#'s own ordering, where a mob's movement
+this frame depends on whether it is still fighting as of this frame's
+combat resolution, not last frame's. `BattleSim.step` (Phase 0) had been
+calling this as a separate pass after every mob's movement, which is the
+wrong order; that call site was fixed too.
+
+**Not yet done:** `StageManager`/`LoadoutManager` (profile-facing progression
+orchestration — save-facing, not battle-facing) and `LevelBuilder`'s
+JSON-driven stage assembly (turning an authored `StageDefinition` into the
+tower/gate/base placements `BattleRound` takes as constructor arguments
+today). Also not modeled, stated in `BattleRound`'s own class doc: no
+`Obstacle`/`BarrierPush`, no footprint-ejection physics (cosmetic, doesn't
+affect outcome), and no `HasCannonPriority` crowd-vs-cannon targeting
+nuance. 124 tests now pass across `mobrush_sim` (78), `mobrush_data` (31),
+and `mobrush_save` (15).
 
 ### Phase 3 — Asset bake pipeline
 

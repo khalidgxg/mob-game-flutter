@@ -1,11 +1,17 @@
+import 'damageable.dart';
+
 /// Enemy spawner castle/tower: has HP, pumps out defenders, collapses at 0.
 ///
 /// Port of the simulation core of `Assets/Scripts/Gameplay/EnemyTower.cs`.
-/// Everything about the visual footprint — the auto-fit engage box, the HP
-/// bar, the collapse animation, the reference castle artwork — is left out;
-/// this models exactly what `Update()`/`SpawnWave()`/`TakeDamage()` decide,
-/// which is the part a headless battle needs.
-class EnemyTower {
+/// The auto-fit-to-renderer engage box, the HP bar, the collapse animation,
+/// and the reference castle artwork are left out; this models exactly what
+/// `Update()`/`SpawnWave()`/`TakeDamage()`/`ZoneChecks()`'s tower branch
+/// decide, which is what a headless battle needs. [engageHalfWidth]/
+/// [engageHalfDepth] stand in for `EngageHalfWidth`/`EngageHalfDepth` at
+/// their resolved runtime defaults (`_engageHalfWidth = 1.3f`,
+/// `_engageHalfDepth = 1.1f` in the C#) rather than the renderer-fit values,
+/// since there is no renderer here to fit to.
+class EnemyTower implements Damageable {
   EnemyTower({
     required this.maxHealth,
     required this.enemyReserve,
@@ -15,6 +21,11 @@ class EnemyTower {
     this.spawnedCharacterId = 'base_enemy',
     this.x = 0.0,
     this.z = 0.0,
+    this.engageHalfWidth = 1.3,
+    this.engageHalfDepth = 1.1,
+    this.launchSpeed = 3.8,
+    this.launchUpwardForce = 3.4,
+    this.spreadWidth = 2.0,
   })  : currentHealth = maxHealth,
         _spawnTimer = initialSpawnDelay > 0 ? initialSpawnDelay : 0.0;
 
@@ -25,14 +36,30 @@ class EnemyTower {
   final int spawnBatch;
   final String spawnedCharacterId;
 
-  /// Ground position, needed only for ability radius checks
-  /// (`Assets/Scripts/Gameplay/BattleAbilityController.cs`'s Freeze/Fireball/
-  /// Lightning all measure distance to `tower.transform.position`). Not read
-  /// by any of this class's own spawn/damage/freeze logic.
+  /// Ground position. Read by ability radius checks
+  /// (`BattleAbilityController`'s Freeze/Fireball/Lightning) and by a
+  /// battle orchestrator's engage/attack and wave-launch placement.
+  @override
   final double x;
+  @override
   final double z;
 
+  /// Half-extents of the attack-trigger box around [x]/[z], in world
+  /// metres. A player mob within this box locks onto the tower as its
+  /// `structTarget`. Port of the *resolved* `EngageHalfWidth`/
+  /// `EngageHalfDepth` — see the class doc for why these are fixed
+  /// constants here rather than fit to a renderer.
+  final double engageHalfWidth;
+  final double engageHalfDepth;
+
+  /// Forward launch speed and upward arc for defenders this tower spawns.
+  /// Port of `EnemyTower.launchSpeed`/`launchUpwardForce`/`spreadWidth`.
+  final double launchSpeed;
+  final double launchUpwardForce;
+  final double spreadWidth;
+
   int currentHealth;
+  @override
   bool alive = true;
   double _spawnTimer;
   double _freezeTimer = 0.0;
@@ -81,6 +108,7 @@ class EnemyTower {
   /// Port of `TakeDamage`. Returns true the instant this call collapses the
   /// tower, so a caller can fire `OnTowerDestroyed()`-equivalent logic
   /// exactly once.
+  @override
   bool takeDamage(int amount) {
     if (!alive) return false;
     currentHealth -= amount;

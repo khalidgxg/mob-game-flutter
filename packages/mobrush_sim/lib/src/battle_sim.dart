@@ -73,14 +73,14 @@ class BattleSim {
     }
   }
 
-  /// One fixed simulation step.
+  /// One fixed simulation step. `Mob.tick` resolves the combatTarget
+  /// disengage/attack block internally, ahead of its own movement branch —
+  /// see the comment on `updateCombatState`'s call site in `tick` — so no
+  /// separate pass over `mobs` is needed here for that.
   void step(double dt) {
     crowd.update(mobs);
     for (var i = 0; i < mobs.length; i++) {
       mobs[i].tick(dt);
-    }
-    for (var i = 0; i < mobs.length; i++) {
-      mobs[i].updateCombatState();
     }
   }
 }

@@ -27,19 +27,59 @@ class GateResult {
 
 /// Reusable crowd portal. Port of the simulation core of
 /// `Assets/Scripts/Gameplay/Gate.cs` — multiplier/negative/additive
-/// semantics and the once-per-round additive spend. The trigger footprint,
-/// spawn placement, and every visual (flash, label, popup, sound combo) are
-/// left out; a battle orchestrator calls [apply] once it has already decided
-/// a mob crossed this gate.
+/// semantics, the once-per-round additive spend, and the swept-segment
+/// crossing test ([wasCrossed]). Spawn placement and every visual (flash,
+/// label, popup, sound combo) are left out; a battle orchestrator calls
+/// [apply] once [wasCrossed] says a mob crossed this gate.
 class Gate {
   Gate({
     int multiplier = 2,
     this.isNegative = false,
     this.isAdditive = false,
     int addAmount = 5,
+    this.x = 0.0,
+    this.z = 0.0,
+    this.halfWidth = 1.15,
+    this.halfDepth = 0.3,
+    this.maxY = 1.9,
   })  : multiplier = multiplier < 1 ? 1 : multiplier,
         addAmount = addAmount < 1 ? 1 : addAmount {
     if (isAdditive) isNegative = false;
+  }
+
+  /// Ground position and trigger footprint, in world metres. Defaults match
+  /// `Gate.cs`'s own field defaults exactly.
+  final double x;
+  final double z;
+  final double halfWidth;
+  final double halfDepth;
+  final double maxY;
+
+  /// Port of `Gate.WasCrossed`. Detects the *swept* movement segment between
+  /// two positions, not just the final point — so a fast-moving or
+  /// steering-nudged mob can never skip a gate between two simulation
+  /// steps. The C#'s Y check only cares that some part of the segment was
+  /// below `maxY` (i.e. grounded, not sailing overhead mid-launch).
+  bool wasCrossed(
+    double prevX,
+    double prevY,
+    double prevZ,
+    double curX,
+    double curY,
+    double curZ,
+  ) {
+    final minY = prevY < curY ? prevY : curY;
+    if (minY >= maxY) return false;
+
+    final minX = prevX < curX ? prevX : curX;
+    final maxX = prevX > curX ? prevX : curX;
+    final minZ = prevZ < curZ ? prevZ : curZ;
+    final maxZ = prevZ > curZ ? prevZ : curZ;
+
+    return maxX >= x - halfWidth &&
+        minX <= x + halfWidth &&
+        maxZ >= z - halfDepth &&
+        minZ <= z + halfDepth;
   }
 
   final int multiplier;

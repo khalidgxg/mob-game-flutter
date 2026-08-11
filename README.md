@@ -28,16 +28,22 @@ engine-independent Dart, mirroring `mobrush_sim`'s shape. Phase 1's content
 round-trip is confirmed against a real export from the live Editor, not just
 a hand-authored fixture (see `mobrush_data/test/real_export_smoke_test.dart`).
 
-Phase 2 is underway in `mobrush_sim`: `Cannon`, `Gate`, `EnemyTower` +
-`StageSection`, `PlayerBase`, and `BattleAbilities` (Freeze/Fireball/
-Lightning) are ported and tested against real authored numbers —
-`CannonLibrary.BuildSpecs()`'s stats, Stage 1-3's tower healths and
-escalation recipes, and Fireball's maxed tuning read off a real Shop
-screenshot. Not yet done: wiring these five systems into one orchestrated
-headless battle, `Mob`'s structure-attack path, and `StageManager`/
-`LoadoutManager`. See Phase 2's "Progress" note in the migration plan.
+Phase 2's gate is met: `Cannon`, `Gate`, `EnemyTower` + `StageSection`,
+`PlayerBase`, and `BattleAbilities` (Freeze/Fireball/Lightning) are ported
+and tested against real authored numbers — `CannonLibrary.BuildSpecs()`'s
+stats, Stage 1-3's tower healths and escalation recipes, Fireball's maxed
+tuning read off a real Shop screenshot — and `BattleRound` wires all five
+into one playable round. `test/battle_round_integration_test.dart` plays a
+full Stage 1 round headlessly, opening formation through cannon fire
+through all three towers falling, and asserts the win. Getting there
+surfaced a real gap: mob-vs-mob melee combat had never been ported, so two
+clashed mobs locked together forever without ever fighting — found by a
+headless run where a mob froze in place instead of dying, fixed by porting
+`Mob.Update()`'s combat-timer block into the right place in `Mob.tick`. See
+Phase 2's progress note in the migration plan for what's still not modeled
+(`StageManager`/`LoadoutManager`, `LevelBuilder`'s JSON stage assembly).
 
-117 tests currently pass across the three packages combined (`dart test` in
+124 tests currently pass across the three packages combined (`dart test` in
 each).
 
 The split between those two packages is the whole architecture in miniature.

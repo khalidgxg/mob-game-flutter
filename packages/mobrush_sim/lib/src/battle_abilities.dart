@@ -41,6 +41,7 @@ class BattleAbilities {
     required this.maxEnergy,
     double startingEnergy = 100.0,
     this.energyRegenPerSecond = 8.0,
+    this.selectedCharacterId = 'base',
   })  : _freeze = freeze,
         _fireball = fireball,
         _lightning = lightning,
@@ -56,6 +57,13 @@ class BattleAbilities {
   final double maxEnergy;
   final double energyRegenPerSecond;
   double energy;
+
+  /// Port of `SelectedCharacterId` — which character the next cannon shot
+  /// and Rush use. Card selection itself (`SelectCharacter`'s
+  /// unlock/ownership checks) is presentation-facing and not modeled; a
+  /// caller sets this directly once it has already decided the character is
+  /// selectable.
+  String selectedCharacterId;
 
   int freezeCharges;
   int fireballCharges;

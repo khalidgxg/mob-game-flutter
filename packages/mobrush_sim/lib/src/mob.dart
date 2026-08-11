@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'combat_limits.dart';
+import 'damageable.dart';
+import 'gate.dart';
 
 enum MobPhase { flying, grounded }
 
@@ -51,6 +53,26 @@ class Mob {
   Mob? combatTarget;
 
   double hp = 5, maxHp = 5, atk = 1, def = 0.5;
+
+  /// Seconds between structure-attack strikes. Port of `attackCooldown`,
+  /// set by a spawner from `max(0.12, 1 / attackSpeed)` — this class does
+  /// not compute that itself, matching the C# where it's assigned once in
+  /// `Setup`, not derived on every use.
+  double attackCooldown = 0.5;
+
+  /// The tower or player base this mob is locked in melee against. Port of
+  /// `structTarget` — set externally by a battle orchestrator's engage
+  /// check (`ZoneChecks`'s tower/base branch), not by `Mob` itself, since
+  /// deciding *which* structure is in range needs the tower/base list this
+  /// class does not hold.
+  Damageable? structTarget;
+  double structAttackTimer = 0.0;
+
+  /// Gates already applied to this mob this round. Port of `passedGates` —
+  /// a gate checks membership here before calling `Gate.apply` again, and a
+  /// spawned clone inherits its source's set so it cannot immediately
+  /// retrigger the gate that just created it.
+  final Set<Gate> passedGates = {};
 
   /// Lane direction this mob advances in. Player mobs walk toward -Z.
   double get advanceDirZ => team == 0 ? -1.0 : 1.0;
@@ -132,6 +154,13 @@ class Mob {
       return;
     }
 
+    // Runs ahead of the movement branch below, matching `Mob.Update()`'s own
+    // order exactly: the C# resolves the combatTarget disengage/attack block
+    // before deciding how the mob moves this frame, because the movement
+    // branch reads whether it is still `fighting` as of *this* frame's
+    // outcome, not last frame's.
+    updateCombatState(dt);
+
     if (phase == MobPhase.flying) {
       velY -= gravity * dt;
       x += velX * dt;
@@ -188,21 +217,45 @@ class Mob {
 
   static double _lerp(double a, double b, double t) => a + (b - a) * t;
 
-  /// Releases a duel once the pair has drifted past the disengage band.
-  void updateCombatState() {
+  /// Seconds into the current mob-vs-mob melee swing. Separate from
+  /// [structAttackTimer] — a mob is never fighting both at once, but they
+  /// are conceptually different clocks in the C# (`_attackTimer` vs
+  /// `_structAttackTimer`) and kept separate here for the same reason.
+  double attackTimer = 0.0;
+
+  /// Releases a duel once the pair has drifted past the disengage band, and
+  /// otherwise deals melee damage on `attackCooldown`. Port of the
+  /// `combatTarget != null` block in `Mob.Update()` — the C# runs this
+  /// ahead of the Flying/Grounded movement branch, which is why a
+  /// battle orchestrator calls this before [tick], not after.
+  void updateCombatState(double dt) {
     final t = combatTarget;
     if (t == null) return;
     if (t.dead) {
       combatTarget = null;
+      attackTimer = 0;
       return;
     }
+
     final dx = x - t.x, dz = z - t.z;
     final d = math.sqrt(dx * dx + dz * dz);
-    final clash = CombatLimits.clashDistance(
-      CombatLimits.baseClashRadius,
-      bodySurplus,
-      t.bodySurplus,
-    );
-    if (d > clash * CombatLimits.disengageFactor) combatTarget = null;
+    final release = CombatLimits.clashDistance(
+          CombatLimits.baseClashRadius,
+          bodySurplus,
+          t.bodySurplus,
+        ) *
+        CombatLimits.disengageFactor;
+
+    if (d > release) {
+      combatTarget = null;
+      attackTimer = 0;
+      return;
+    }
+
+    attackTimer += dt;
+    if (attackTimer >= attackCooldown) {
+      attackTimer = 0;
+      t.takeDamage(atk, attacker: this);
+    }
   }
 }

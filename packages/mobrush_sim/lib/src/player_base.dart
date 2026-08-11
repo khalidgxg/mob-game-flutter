@@ -1,8 +1,10 @@
+import 'damageable.dart';
+
 /// The player's home line. Port of the simulation core of
 /// `Assets/Scripts/Gameplay/PlayerBase.cs` — health, the cannon's additive
 /// bonus, and the engage-line test. The hit-flash material and the gizmo
 /// preview are presentation and left out.
-class PlayerBase {
+class PlayerBase implements Damageable {
   PlayerBase({
     required this.baseHealth,
     int cannonHealthBonus = 0,
@@ -18,6 +20,7 @@ class PlayerBase {
   final int baseHealth;
   final int maxHealth;
   int currentHealth;
+  @override
   bool alive = true;
 
   final double engageHalfWidth;
@@ -35,6 +38,14 @@ class PlayerBase {
   final double defenceLineZ;
   final double defenceLineX;
 
+  /// [Damageable]'s position contract — the base's own logic never reads
+  /// these; they exist for a `Mob`'s `structTarget` and ability radius
+  /// checks to treat the base the same way they treat a tower.
+  @override
+  double get x => defenceLineX;
+  @override
+  double get z => defenceLineZ;
+
   double get priorityLineZ =>
       defenceLineZ - solidHalfDepth - (priorityRange < 0 ? 0 : priorityRange);
 
@@ -50,6 +61,7 @@ class PlayerBase {
 
   /// Port of `TakeDamage`. Returns true the instant this call brings the base
   /// down, mirroring `OnBaseDestroyed()` firing exactly once.
+  @override
   bool takeDamage(int amount) {
     if (!alive) return false;
     currentHealth -= amount;
