@@ -6,6 +6,11 @@
 library;
 
 export 'src/battle_sim.dart';
+export 'src/cannon.dart';
 export 'src/combat_limits.dart';
 export 'src/crowd_manager.dart';
+export 'src/enemy_tower.dart';
+export 'src/gate.dart';
 export 'src/mob.dart';
+export 'src/player_base.dart';
+export 'src/stage_section.dart';
