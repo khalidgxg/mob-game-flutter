@@ -1,0 +1,254 @@
+# Rebuilding MobRush in Flutter — migration plan
+
+Status: **proposed, pending approval.** Nothing in `mobGame` has been changed.
+
+---
+
+## 1. Verdict
+
+A faithful *port* of the Unity project is not possible. Flutter has no
+production 3D engine, and the candidates that exist (`flutter_scene`,
+`flutter_gpu`, `three_dart`) are either experimental or CPU-bound. Skinned
+crowd animation at 350 units is not something any of them has demonstrated.
+
+A *rebuild* is possible, and the game is unusually well-suited to it. Three
+findings drive this plan:
+
+**The game is already 2.5D.** `BattleCamera.cs` frames the battle with an
+orthographic camera at a fixed 45° pitch that never orbits. The scene is
+modelled in 3D but only ever observed from one fixed angle under a projection
+with no perspective. That is a linear world→screen map — two lines of Dart
+(`apps/poc_battle/lib/iso.dart`). It also means sprites baked from that same
+camera are pixel-identical to what Unity renders today.
+
+**The rules are already engine-independent in substance.** `CrowdManager`,
+`Mob`'s movement, `CombatLimits`, `RewardRules`, `ContentValidation` and
+`PlayerProfile` are arithmetic and plain data. `PlayerProfile` is already a
+serializable POCO at schema version 7 with no Unity asset references. The
+coupling to Unity is syntactic — `Vector3`, `MonoBehaviour.Update`,
+`transform.position` — not structural.
+
+**The UI layer is where Flutter wins outright.** `Presentation/` is 7,790
+lines, all of it hand-built uGUI: `UiKit.cs` alone spends 674 lines
+constructing `RectTransform`s, anchors and sizeDeltas in code. Flutter's
+layout system removes that category of work rather than translating it.
+
+## 2. What the proof of concept established, and what it did not
+
+Built and committed in this repository. See `README.md` for how to reproduce.
+
+**Established:**
+
+- The crowd solve costs **1.10 ms per fixed step at 350 units** under native
+  AOT — 6.6% of a 60 Hz frame. Cost is dominated by neighbour pair checks
+  (36,623 per step at 350), and scales as documented, not pathologically.
+- The port is behaviourally faithful. Ten tests each assert a specific
+  regression the C# source records having already found and fixed, so a
+  rewrite cannot silently reintroduce it.
+- The entire crowd renders in **one batched draw call** (`drawRawAtlas`) from
+  **one texture**, into buffers allocated once and reused. A full crowd frame
+  allocates nothing. Team tint is a per-sprite colour in the same call.
+- The isometric projection, depth ordering, per-unit animation phase and team
+  colour all work together correctly on screen.
+
+**Not established — and this is the gate for everything below:**
+
+- **Frame rate on real hardware.** This environment has no GPU and no device.
+  The web figures in the README come from a CPU rasteriser running dart2js and
+  are a floor, not a forecast.
+- **That baked sprites look as good as the live 3D.** The PoC uses procedural
+  placeholder figures. Whether real bakes hold up at gameplay scale is a
+  judgement only you can make, from real output.
+
+Phase 0 exists to close both before any migration work starts.
+
+## 3. Target architecture
+
+```
+packages/
+  mobrush_sim/       Pure Dart. Rules, crowd solve, combat, progression.
+                     No Flutter, no Flame. Fully unit-testable.
+  mobrush_data/      Content models + JSON loaders. Generated from the
+                     ScriptableObjects exported out of Unity.
+  mobrush_save/      PlayerProfile, schema versioning, migrations, store.
+  mobrush_ui/        Design system: VISUAL_IDENTITY.md as ThemeData, tokens,
+                     shared widgets. One place shapes and colours live.
+apps/
+  mobrush/           The game. Flame surface for battle, Flutter for the rest.
+tools/
+  unity_export/      Editor scripts that run inside mobGame and emit JSON+PNG.
+```
+
+The rule that keeps this honest: **`mobrush_sim` never imports Flutter.** If a
+rule cannot be tested headlessly, it is in the wrong package.
+
+## 4. Phases
+
+Each phase has an explicit exit gate. A phase is not done until its gate is
+demonstrated, not until its code is written.
+
+### Phase 0 — Device validation (gate for the whole project)
+
+The one measurement that cannot be inferred.
+
+1. Run the committed PoC on a real mid-range Android phone
+   (`flutter run --release`). Sweep 350 / 700 / 1500 units.
+2. Bake **one** real character (`base`) from Unity through the pipeline in
+   §5 and drop it into the PoC beside the placeholder.
+3. Look at it. Compare against a screenshot of the same crowd in Unity.
+
+**Gate:** ≥55 FPS at 350 units on the target device, *and* your judgement that
+the baked look is acceptable. If frame rate passes but the look does not, the
+decision moves to the hybrid option (Flutter shell + embedded Unity) and this
+plan is void. Better to learn that in week one than in month three.
+
+### Phase 1 — Content out of Unity, into Dart
+
+The catalogs are ScriptableObjects; they need to become data the Dart side can
+read without Unity present.
+
+1. Editor script in `mobGame` exporting `GameConfig`, `CharacterCatalog`,
+   `CannonCatalog`, `StageCatalog`, `AbilityCatalog` to JSON.
+2. Dart models in `mobrush_data` mirroring `CharacterDefinition`,
+   `CannonDefinition`, `StageDefinition`, `AbilityDefinition`,
+   `CharacterProgression`, `RewardRules`, `StagePresentationProfile`.
+3. Port `ContentValidation` (664 lines) as Dart tests over the exported JSON.
+4. Port `PlayerProfile` (schema 7) and its migrations into `mobrush_save`.
+
+**Gate:** the exported catalogs load in Dart and pass the ported validator with
+the same verdicts Unity's `ContentValidatorMenu` gives today.
+
+### Phase 2 — Complete the simulation
+
+The PoC covers the crowd solve and mob movement. The rest of the battle:
+
+- `Cannon` (901 lines) — aim, ballistic launch, ammo, spread fire behaviour.
+- `Gate` (330) — multiplier/additive gates, pass-through tracking.
+- `EnemyTower` (547) and `PlayerBase` (186) — structures, HP, melee targeting.
+- `BattleAbilityController` (703) — charges, cooldowns, ability effects.
+- `StageManager`, `LoadoutManager`, `CharacterProgression`, `RewardRules`.
+- `LevelBuilder` (283) → a stage loader producing simulation state from JSON.
+
+Every one of these is arithmetic plus state. None needs a renderer.
+
+**Gate:** a full authored stage plays start to finish headlessly — spawn,
+gates, towers, castle, win/lose, rewards — driven by a scripted input trace,
+with the result asserted in a test. No screen involved.
+
+### Phase 3 — Asset bake pipeline
+
+An editor script in `mobGame` that, for each character and each of its two
+clips, poses the FBX in front of an orthographic camera at `BattleCamera.pitch`
+and captures N frames on transparent background, then packs to an atlas + JSON.
+
+Scope, from the authored roster: 6 characters × 2 clips (run, attack) × 16
+frames ≈ **192 frames**, one 2048² sheet. Same treatment for castles, gates,
+towers and scenery props — those are single frames, not clips.
+
+Decisions to make here, once:
+- Frame count per clip (16 is the starting point; 12 may be enough at scale).
+- Frame resolution (96px in the PoC; Max is 1.35× so he needs headroom).
+- Whether shadows bake in or are drawn as ground decals (decals recommended —
+  they stay correct as units overlap).
+
+**Gate:** all six characters baked, dropped into the PoC, and visually approved
+by you against Unity screenshots.
+
+### Phase 4 — Battle presentation
+
+- Wire the real atlas into `CrowdRenderer`; extend it to structures and props.
+- Ground, lane, gates, towers, castle — same projection, same depth sort.
+- HUD in Flutter widgets over the Flame surface, replacing `Hud.cs` (914 +
+  317 lines).
+- VFX: `Vfx`, `AbilityVfx`, `FloatingText`, `WorldHpBar`, `GateLabelEffect`.
+  Flame's particle system covers most; the rest is Canvas drawing.
+- Camera fit: port `BattleCamera`'s aspect-driven sizing to
+  `camera.viewfinder.zoom`, including the tall-portrait guard.
+
+**Gate:** a full stage is playable on device at target frame rate, and reads
+correctly against a Unity screenshot of the same stage.
+
+### Phase 5 — Meta screens
+
+The largest line count, the lowest risk, the biggest simplification.
+
+- Home (`HomeMenu.cs`, 708) — Flutter layout, no more manual anchoring.
+- Shop (`ShopScreen` + Characters/Abilities/Cannons partials, 1,478) —
+  `ListView`/`GridView` replace hand-built scroll rects.
+- Campaign map (`CampaignMapScreen.cs`, 1,087) — the atlas artwork with
+  normalized anchors from `CampaignAtlasDefinition` maps directly onto
+  `Stack` + `Align(FractionalOffset)`. This one gets dramatically shorter.
+- Game over (`GameOverScreen.cs`, 188), settings, safe-area handling.
+- `VISUAL_IDENTITY.md` encoded as `ThemeData` + design tokens in `mobrush_ui`,
+  replacing colours currently spread across the presentation code.
+
+**Gate:** every screen navigable, progression persisting across restarts, and
+each screen reviewed against its current Unity screenshot.
+
+### Phase 6 — Audio, polish, release
+
+- Port `Sfx.cs` (394 lines, 20 named cues) onto a Flutter audio package,
+  following `AUDIO_IDENTIT.md`.
+- Performance pass on device: frame pacing, atlas residency, GC pressure.
+- Android and iOS release builds, icons, splash, store metadata.
+
+**Gate:** signed release builds meeting the frame-rate target on the reference
+device, with `release-build-check`'s equivalent audit passing.
+
+## 5. What changes, honestly
+
+Things that will not survive the rebuild, stated plainly so they are decisions
+rather than surprises:
+
+1. **Dynamic lighting and shadows bake in.** Sun direction becomes fixed. Unit
+   shadows become ground decals.
+2. **The camera angle is locked permanently.** `BattleCamera.pitch` becomes a
+   bake-time constant. Changing it later means re-baking everything. The
+   current camera does not orbit, so nothing is lost today — but the option is.
+3. **Post-processing goes.** Anything URP's post stack contributes must be
+   baked into the art or reproduced as Canvas effects.
+4. **Character variety costs texture, not CPU.** Adding a character means new
+   atlas frames rather than a new FBX. Cheaper at runtime, more work per
+   character to author.
+5. **The Unity project stays the art tool.** It remains the source of truth for
+   models and animation and the host of the bake pipeline. This is a rebuild of
+   the *game*, not a retirement of the *project*.
+
+## 6. Risks
+
+| Risk | Severity | Handling |
+|---|---|---|
+| Device frame rate misses target | project-ending | Phase 0 measures it first, before any migration work |
+| Baked look judged unacceptable | project-ending | Phase 0 bakes one real character for your judgement |
+| Simulation drifts from C# behaviour | high | Parity tests per fixed bug, extended each phase; both versions playable side by side |
+| Atlas exceeds texture limits | medium | 192 frames fits 2048² with room; frame count and resolution are tunable knobs |
+| Overdraw at crowd density | medium | Already one batched call; culling off-screen units is the next lever |
+| Scope creep into redesigning screens | medium | Phase 5 reproduces current screens; redesign is separate work, after parity |
+
+## 7. Effort
+
+For one developer working steadily, and assuming Phase 0 passes:
+
+| Phase | Estimate |
+|---|---|
+| 0 — Device validation | 1–2 days |
+| 1 — Content + save | ~1 week |
+| 2 — Simulation | ~2 weeks |
+| 3 — Bake pipeline | ~1 week |
+| 4 — Battle presentation | ~2 weeks |
+| 5 — Meta screens | 2–3 weeks |
+| 6 — Audio, polish, release | 1–2 weeks |
+| **Total** | **~10–12 weeks** |
+
+The estimate assumes content and art are reused, not re-authored, and that
+Phase 5 reproduces the existing screens rather than redesigning them.
+
+## 8. Decision requested
+
+1. Approve or reject this plan.
+2. Confirm the reference device for Phase 0's gate, and the frame-rate target.
+3. Confirm that a permanently locked camera angle (§5.2) is acceptable.
+
+Nothing in `mobGame` will be modified without that approval. Phase 0's bake
+script is the first change it would need, and it is additive — a new editor
+script under `Assets/Editor/`.
