@@ -27,8 +27,66 @@ class PocApp extends StatelessWidget {
         // Phase 4's gate scene: BattleRound driven by real tap/drag input,
         // rendered through the depth-sorted crowd+structure renderer.
         'stage1' => const Stage1Screen(),
-        _ => const BattleScreen(),
+        'crowd' => const BattleScreen(),
+        // The APK build has no query string to read, so on-device testing
+        // needs an in-app picker instead of the web-only ?preview= links.
+        _ => const _ScenePicker(),
       },
+    );
+  }
+}
+
+/// On-device entry point: the three PoC scenes behind one tap each, since
+/// an installed APK has no URL bar to carry `?preview=...` in.
+class _ScenePicker extends StatelessWidget {
+  const _ScenePicker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'MobRush — Flutter/Flame PoC',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const Stage1Screen()),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                child: Text('Stage 1 — playable battle (Phase 4)'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BattleScreen()),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                child: Text('Crowd performance benchmark (Phase 0)'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => GameWidget(game: StructurePreviewGame()),
+                ),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                child: Text('Castle/gate artwork (Phase 3)'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
