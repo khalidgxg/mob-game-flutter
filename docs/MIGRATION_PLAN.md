@@ -315,19 +315,22 @@ screenshots over both 8s and 20s confirm the battle progresses correctly:
 crowds engage, cross the gate, and assault the castle with correct
 depth-sorted rendering.
 
-**Known issue, not yet root-caused:** in this environment's headless
-Chromium/CanvasKit/SwiftShader screenshot pipeline, the `stage1` scene's
-`GameWidget` renders letterboxed (a narrow vertical strip) instead of
-filling the viewport, and no `Positioned` sibling in the surrounding `Stack`
-— including a bare, unconditional `Text` used to rule out
-`StreamBuilder`/timing causes — paints on top of it, even though the
-identical `Stack` pattern renders correctly on the sibling `BattleScreen`
-(its `_Telemetry` HUD is confirmed working in earlier screenshots). This
-does not affect the underlying simulation or the scene's own rendering,
-both confirmed correct from the battle content itself; it needs a real
-device or a non-headless browser to determine whether it is specific to
-this screenshot pipeline. Documented in `apps/poc_battle/lib/main.dart` on
-`Stage1Screen`.
+**Confirmed on a real device:** an arm64 release APK was built
+(`flutter build apk --release --split-per-abi`) and tested on the user's own
+Android phone. The HUD renders correctly — FPS, sim time, outcome, ammo,
+energy, base HP, and towers standing were all visible and updating live.
+The earlier report of missing HUD text was specific to this project's
+headless Chromium/CanvasKit/SwiftShader screenshot pipeline, not a real
+bug. What the device confirmed as real: the lane doesn't fill the
+viewport — `GroundRenderer` only draws the lane quad itself with no
+sky/background art behind it, so the screen letterboxes to black above,
+below, and beside the lane. That's in scope for this PoC (it proves the
+simulation and the depth-sorted renderer agree with each other, not a
+finished frame) — filling the rest of the screen with background art is
+later polish, not a Phase 4 gate item. Since an installed APK has no URL
+bar for `?preview=...`, `main.dart` now opens on an in-app scene picker
+(Stage 1 battle / crowd benchmark / castle-gate artwork) instead of
+defaulting straight to the crowd benchmark.
 
 **Not yet done:** the HUD strip is deliberately minimal (energy, ammo,
 outcome, base/tower health as text) — no ability buttons or wave tracker

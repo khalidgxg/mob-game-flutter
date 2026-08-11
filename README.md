@@ -65,11 +65,16 @@ picture is drawn from, reachable at `?preview=stage1`. Two real bugs were
 found and fixed getting here: missing mob-vs-mob attack damage (see Phase 2's
 note above) and a "concurrent modification during iteration" crash in
 `BattleRound.step()` from a gate-spawned clone being appended to the list
-being iterated. See the migration plan's Phase 4 progress note for a known,
-unresolved cosmetic issue: this environment's headless screenshot pipeline
-letterboxes the game surface and won't paint the HUD overlay on top of it,
-for reasons not yet root-caused — it does not affect the simulation or scene
-rendering themselves, both confirmed correct from the battle content.
+being iterated. Confirmed working on a real Android device: an arm64
+release APK was built and tested, and the HUD (FPS/sim/outcome/ammo/energy/
+base HP/towers) renders correctly — the earlier "HUD doesn't render" finding
+was specific to this environment's headless screenshot pipeline, not a real
+bug. What the device did confirm as real: the lane doesn't fill the
+viewport, since `GroundRenderer` draws only the lane quad with no
+background art behind it — expected for a PoC proving the simulation and
+renderer agree, not a finished frame. See the migration plan's Phase 4
+progress note for detail. Because an installed APK has no URL bar for
+`?preview=...`, the app now opens on an in-app scene picker instead.
 
 124 tests currently pass across the three packages combined (`dart test` in
 each).

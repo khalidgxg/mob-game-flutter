@@ -194,17 +194,20 @@ class _TelemetryState extends State<_Telemetry> {
 /// outcome only — full parity with `Hud.cs`'s ability buttons and wave
 /// tracker is separate work this phase does not claim to finish.
 ///
-/// Known issue (undiagnosed): in this environment's headless
-/// Chromium/CanvasKit/SwiftShader screenshot pipeline, this screen's
-/// `GameWidget` renders letterboxed instead of filling the viewport, and
-/// no `Positioned` sibling in the `Stack` (including a bare, unconditional
-/// `Text` used to isolate the bug from the `StreamBuilder`/`simReady`
-/// logic below) paints over it — even though the identical `Stack` pattern
-/// works correctly on `BattleScreen`'s `_Telemetry` overlay. Root cause not
-/// found; does not affect the underlying simulation or scene rendering,
-/// both confirmed correct from the battle content itself. Needs a real
-/// device or non-headless browser to confirm whether this is
-/// screenshot-pipeline-specific.
+/// Confirmed on a real Android device (arm64 APK build): the HUD renders
+/// correctly. The earlier report of missing HUD text was specific to this
+/// project's headless Chromium/CanvasKit/SwiftShader screenshot pipeline,
+/// not a real bug — on-device, every `Positioned` sibling in the `Stack`
+/// paints as expected.
+///
+/// What IS real, confirmed on-device too: the lane doesn't fill the
+/// viewport — `GroundRenderer` only draws the lane quad itself (a fixed
+/// ±24-unit depth strip), with no sky/background art behind it, so the
+/// screen letterboxes to black above, below, and beside the lane. That's
+/// expected for this PoC's scope — it exists to prove the simulation and
+/// the depth-sorted renderer agree with each other, not to art-direct a
+/// finished frame — and filling the rest of the screen is later polish
+/// work, not a Phase 4 gate item.
 class Stage1Screen extends StatefulWidget {
   const Stage1Screen({super.key});
 
