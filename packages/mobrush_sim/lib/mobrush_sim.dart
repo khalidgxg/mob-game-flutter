@@ -5,6 +5,7 @@
 /// running inside a rendered scene, a headless benchmark, or a unit test.
 library;
 
+export 'src/battle_abilities.dart';
 export 'src/battle_sim.dart';
 export 'src/cannon.dart';
 export 'src/combat_limits.dart';

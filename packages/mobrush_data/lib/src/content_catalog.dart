@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'ability_tuning.dart';
 import 'cannon_definition.dart';
 import 'character_definition.dart';
 import 'reward_rules.dart';
@@ -13,11 +14,13 @@ class ContentCatalog {
   const ContentCatalog({
     required this.characters,
     required this.cannons,
+    required this.abilities,
     required this.rewardRules,
   });
 
   final List<CharacterDefinition> characters;
   final List<CannonDefinition> cannons;
+  final List<AbilityDefinition> abilities;
   final RewardRules rewardRules;
 
   CharacterDefinition? character(String id) {
@@ -30,6 +33,13 @@ class ContentCatalog {
   CannonDefinition? cannon(String id) {
     for (final c in cannons) {
       if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  AbilityDefinition? ability(String id) {
+    for (final a in abilities) {
+      if (a.id == id) return a;
     }
     return null;
   }
@@ -54,6 +64,13 @@ class ContentCatalog {
       cannons: (json['cannons'] as List)
           .cast<Map<String, dynamic>>()
           .map(CannonDefinition.fromJson)
+          .toList(),
+      // Optional: older exports (and both committed fixtures) predate the
+      // ability catalog being wired into ContentExporter. An absent key
+      // parses as no abilities rather than a format error.
+      abilities: ((json['abilities'] as List?) ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(AbilityDefinition.fromJson)
           .toList(),
       rewardRules:
           RewardRules.fromJson(json['rewardRules'] as Map<String, dynamic>),

@@ -11,10 +11,12 @@ Flutter?*
 ## Layout
 
 ```
-packages/mobrush_sim/   Pure Dart. The battle simulation, ported from C#.
-                        No Flutter, no Flame, no rendering. Unit-testable.
+packages/mobrush_sim/   Pure Dart. Battle simulation: crowd, Cannon, Gate,
+                        EnemyTower, PlayerBase, BattleAbilities. Unit-testable,
+                        no Flutter, no Flame, no rendering.
 packages/mobrush_data/  Pure Dart. Content models (characters, cannons,
-                        reward rules), loaded from ContentExporter's JSON.
+                        abilities, reward rules), loaded from ContentExporter's
+                        JSON.
 packages/mobrush_save/  Pure Dart. PlayerProfile, ported field-for-field.
 apps/poc_battle/        Flutter + Flame. Renders the simulation.
 docs/MIGRATION_PLAN.md  The full plan this PoC was built to justify.
@@ -22,11 +24,21 @@ docs/MIGRATION_PLAN.md  The full plan this PoC was built to justify.
 
 `packages/mobrush_data` and `packages/mobrush_save` are Phase 1 of the plan —
 content and save state moved out of Unity's ScriptableObjects into
-engine-independent Dart, mirroring `mobrush_sim`'s shape. 37 tests currently
-pass across the two packages (`dart test` in each). What Phase 1 does not yet
-cover — `StageDefinition`, `AbilityDefinition`, the full `ContentValidation`
-port, and a real (not hand-authored) content export — is listed under Phase
-1's "Progress" note in the migration plan.
+engine-independent Dart, mirroring `mobrush_sim`'s shape. Phase 1's content
+round-trip is confirmed against a real export from the live Editor, not just
+a hand-authored fixture (see `mobrush_data/test/real_export_smoke_test.dart`).
+
+Phase 2 is underway in `mobrush_sim`: `Cannon`, `Gate`, `EnemyTower` +
+`StageSection`, `PlayerBase`, and `BattleAbilities` (Freeze/Fireball/
+Lightning) are ported and tested against real authored numbers —
+`CannonLibrary.BuildSpecs()`'s stats, Stage 1-3's tower healths and
+escalation recipes, and Fireball's maxed tuning read off a real Shop
+screenshot. Not yet done: wiring these five systems into one orchestrated
+headless battle, `Mob`'s structure-attack path, and `StageManager`/
+`LoadoutManager`. See Phase 2's "Progress" note in the migration plan.
+
+117 tests currently pass across the three packages combined (`dart test` in
+each).
 
 The split between those two packages is the whole architecture in miniature.
 `mobrush_sim` has no dependency on any engine, so the rules of the game can be

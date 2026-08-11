@@ -13,6 +13,8 @@ class EnemyTower {
     this.initialSpawnDelay = 0.0,
     this.spawnBatch = 2,
     this.spawnedCharacterId = 'base_enemy',
+    this.x = 0.0,
+    this.z = 0.0,
   })  : currentHealth = maxHealth,
         _spawnTimer = initialSpawnDelay > 0 ? initialSpawnDelay : 0.0;
 
@@ -22,6 +24,13 @@ class EnemyTower {
   final double initialSpawnDelay;
   final int spawnBatch;
   final String spawnedCharacterId;
+
+  /// Ground position, needed only for ability radius checks
+  /// (`Assets/Scripts/Gameplay/BattleAbilityController.cs`'s Freeze/Fireball/
+  /// Lightning all measure distance to `tower.transform.position`). Not read
+  /// by any of this class's own spawn/damage/freeze logic.
+  final double x;
+  final double z;
 
   int currentHealth;
   bool alive = true;
@@ -34,6 +43,8 @@ class EnemyTower {
   /// `EnemyTower.SpawnWave()`'s reserve bookkeeping exactly, without knowing
   /// anything about how a mob is placed in the world.
   int lastWaveSpawnCount = 0;
+
+  bool get isFrozen => _freezeTimer > 0;
 
   /// Stops defender spawning while Freeze is active. Port of `ApplyFreeze`.
   void applyFreeze(double duration) {

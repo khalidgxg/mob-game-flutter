@@ -75,12 +75,62 @@ class Mob {
     combatTarget = other;
   }
 
+  /// Port of `Mob.TakeDamage`. Defence always reduces the hit, but never
+  /// below a 0.5 floor — the C# comment calls this out explicitly so a
+  /// heavily-defended unit is never literally unkillable.
+  ///
+  /// The C# also has being hit start a fight against an unengaged attacker
+  /// (`combatTarget == null && structTarget == null`), which is what stops a
+  /// mob from taking damage the whole way in and never striking back. Only
+  /// the `combatTarget` half of that guard is modeled here — `structTarget`
+  /// (a mob mid-melee against a tower or the player base) does not exist in
+  /// this port yet, since the structure-attack path itself is not ported.
+  void takeDamage(double amount, {Mob? attacker}) {
+    if (dead) return;
+
+    if (attacker != null &&
+        !attacker.dead &&
+        attacker.team != team &&
+        combatTarget == null) {
+      fight(attacker);
+    }
+
+    final finalDamage = math.max(0.5, amount - def);
+    hp = math.max(hp - finalDamage, 0.0);
+    if (hp <= 0) dead = true;
+  }
+
+  double _freezeTimer = 0.0;
+  bool get isFrozen => _freezeTimer > 0;
+
+  /// Port of `Mob.ApplyFreeze` — team-restricted exactly like the C#: only
+  /// team 1 (enemy) mobs can be frozen, which is why the freeze ability
+  /// never needs to check team on its own end.
+  void applyFreeze(double duration) {
+    if (dead || team != 1) return;
+    if (duration > _freezeTimer) _freezeTimer = duration;
+    steerX = 0;
+    steerZ = 0;
+    seekDirX = 0;
+    seekDirZ = 0;
+  }
+
   /// Advances one mob by [dt]. Mirrors the movement branch of `Mob.Update()`;
   /// the ordering matters — steering composes a direction and `speed` alone
   /// decides the pace, so seekRange stays a reach stat instead of becoming a
   /// sprint button.
   void tick(double dt) {
     if (dead) return;
+
+    if (_freezeTimer > 0) {
+      _freezeTimer -= dt;
+      if (_freezeTimer < 0) _freezeTimer = 0;
+      steerX = 0;
+      steerZ = 0;
+      seekDirX = 0;
+      seekDirZ = 0;
+      return;
+    }
 
     if (phase == MobPhase.flying) {
       velY -= gravity * dt;

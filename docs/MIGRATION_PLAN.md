@@ -162,6 +162,45 @@ Every one of these is arithmetic plus state. None needs a renderer.
 gates, towers, castle, win/lose, rewards — driven by a scripted input trace,
 with the result asserted in a test. No screen involved.
 
+**Progress:** five of the systems above are committed to `mobrush_sim`, each
+against real authored numbers where they exist — `Cannon` (aim clamp,
+fire-rate cooldown, ammo, multi-shot spread fan — matching
+`CannonLibrary.BuildSpecs()` row 0 exactly: fireRate 0.045, ammoCapacity
+130), `Gate` (×N/+N/÷N semantics, the once-per-round additive spend),
+`EnemyTower` + `StageSection`/`SectionEscalation` (spawn timer/reserve/
+freeze/collapse, and the difficulty curve — tested against Stage 1-3's real
+tower healths and escalation recipes), `PlayerBase` (health, the cannon's
+additive HP bonus, the engage-line test), and `BattleAbilities` (energy,
+charges, and Freeze/Fireball/Lightning's exact targeting and damage —
+Fireball's test uses the real maxed tuning read off a user-provided Shop
+screenshot: 90 damage, 4.6 radius, 240 siege). `AbilityTuning` was added to
+`mobrush_data` alongside `CharacterDefinition`/`CannonDefinition`, since it's
+authored content, not simulation state; `ContentExporter.cs` now exports the
+ability catalog too. 117 tests pass across `mobrush_sim` (71), `mobrush_data`
+(31), and `mobrush_save` (15).
+
+Two of the port's own edge cases surfaced bugs in the *tests*, not the ported
+code, once traced back to the C# line by line: `EnemyTower`'s spawn timer
+starts at 0 and is never pre-advanced, so with the default
+`initialSpawnDelay` of 0 the first wave fires on the very first tick
+regardless of `dt` — matching the C# tooltip "0 launches immediately"
+literally rather than intuitively. And `Cannon`'s aim clamp renormalizes a
+*second* time after clamping z to -0.35, so a purely sideways/backward aim
+(x near 0) collapses all the way to straight forward instead of stopping at
+-0.35 — reproduced by hand-deriving Unity's exact double-`Vector3.Normalize()`
+sequence rather than assuming what the clamp "should" do.
+
+**Not yet done:** `Mob`'s structure-attack path (the piece that actually
+calls `EnemyTower.takeDamage`/`PlayerBase.takeDamage` during a battle —
+currently those methods exist and are tested in isolation, but nothing
+drives a mob to walk up and use them), `StageManager`/`LoadoutManager`
+(profile-facing progression orchestration), `LevelBuilder`'s JSON-driven
+stage assembly, and — the piece that actually closes this phase's gate —
+one `BattleSim`-level orchestrator that wires all of the above together into
+a single headless round a scripted input trace can play start to finish.
+What exists today is five independently correct, independently tested
+systems; they are not yet assembled into one.
+
 ### Phase 3 — Asset bake pipeline
 
 An editor script in `mobGame` that, for each character and each of its two
