@@ -156,6 +156,7 @@ class BattleRound {
     final mob = Mob(
       team: team,
       index: _nextMobIndex++,
+      characterId: characterId,
       speed: stats.speed,
       seekRange: stats.seekRange,
       crowdSeparationRadius: crowdSeparation,
@@ -170,7 +171,8 @@ class BattleRound {
       ..maxHp = stats.hp
       ..atk = stats.atk
       ..def = stats.def
-      ..attackCooldown = stats.attackSpeed > 0 ? math.max(0.12, 1.0 / stats.attackSpeed) : 0.2
+      ..attackCooldown =
+          stats.attackSpeed > 0 ? math.max(0.12, 1.0 / stats.attackSpeed) : 0.2
       ..phase = phase;
     mobs.add(mob);
     return mob;
@@ -418,7 +420,10 @@ class BattleRound {
     final characterId = _characterIdFor(m);
     final canGenerate = _canGenerateCharacter(characterId);
     final capacityRemaining = _maxMobs - (mobs.length - _deadCount());
-    final result = g.apply(canGenerate: canGenerate, capacityRemaining: capacityRemaining);
+    final result = g.apply(
+      canGenerate: canGenerate,
+      capacityRemaining: capacityRemaining,
+    );
 
     for (var i = 0; i < result.spawned; i++) {
       final clone = spawnMob(
@@ -434,13 +439,9 @@ class BattleRound {
     if (result.mobDied) m.dead = true;
   }
 
-  /// A spawned mob does not carry its authored character id — this
-  /// orchestrator does, keyed by team/definition at spawn time. Until a
-  /// caller wires a proper id-carrying spawn record, gates and clones reuse
-  /// the currently-selected cannon character for player-side generation,
-  /// matching `Gate.Apply`'s own fallback
-  /// (`mob.definition?.id ?? Game.I.SelectedCharacterId`).
-  String _characterIdFor(Mob m) => abilities.selectedCharacterId;
+  /// A gate duplicates the unit that actually crossed it.
+  String _characterIdFor(Mob m) =>
+      m.characterId.isNotEmpty ? m.characterId : abilities.selectedCharacterId;
 
   bool _canGenerateCharacter(String characterId) {
     final def = content.character(characterId);

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -16,16 +17,20 @@ class StructurePlacement {
     required this.image,
     required this.worldX,
     required this.worldZ,
+    required this.towerIndex,
     this.groundY = 0.5,
-  })  : gateSpec = null;
+  })  : gateSpec = null,
+        gateLabel = '';
 
   const StructurePlacement.gate({
     required this.gateSpec,
     required this.image,
     required this.worldX,
     required this.worldZ,
+    required this.gateLabel,
     this.groundY = 0.429,
-  })  : castleSpec = null;
+  })  : castleSpec = null,
+        towerIndex = null;
 
   final CastleArtworkSpec? castleSpec;
   final GateArtworkSpec? gateSpec;
@@ -33,9 +38,10 @@ class StructurePlacement {
   final double worldX;
   final double worldZ;
   final double groundY;
+  final int? towerIndex;
+  final String gateLabel;
 
-  double get depthKey =>
-      worldZ + (castleSpec?.forwardOffsetZ ?? 0.0);
+  double get depthKey => worldZ + (castleSpec?.forwardOffsetZ ?? 0.0);
 }
 
 /// Draws the crowd and every static structure in one correctly depth-sorted
@@ -90,6 +96,7 @@ class BattleSceneRenderer extends Component {
 
   @override
   void render(ui.Canvas canvas) {
+    _drawDefenceLine(canvas);
     final mobs = round.mobs;
     _order
       ..clear()
@@ -119,7 +126,8 @@ class BattleSceneRenderer extends Component {
     for (final i in _order) {
       final m = mobs[i];
 
-      while (structIdx < structures.length && structures[structIdx].depthKey <= m.z) {
+      while (structIdx < structures.length &&
+          structures[structIdx].depthKey <= m.z) {
         flush();
         _drawStructure(canvas, structures[structIdx]);
         structIdx++;
@@ -143,7 +151,12 @@ class BattleSceneRenderer extends Component {
         _shadowPaint,
       );
 
-      final character = m.index % atlas.characterIds.length;
+      var character = atlas.characterIds.indexOf(m.characterId);
+      if (character < 0) {
+        character =
+            atlas.characterIds.indexOf(m.team == 0 ? 'base' : 'base_enemy');
+      }
+      if (character < 0) character = m.index % atlas.characterIds.length;
       final fighting = m.combatTarget != null || m.structTarget != null;
       final phase = _clock * (fighting ? 10.0 : 12.0) + m.index * 0.37;
       final frameIndex = fighting
@@ -151,7 +164,7 @@ class BattleSceneRenderer extends Component {
           : atlas.runFrame(character, phase.floor());
       final src = atlas.frames[frameIndex];
 
-      const scale = 0.55;
+      final scale = (projection.pixelsPerUnit / 62.0).clamp(0.39, 0.68);
       final o = n * 4;
       _transforms[o] = scale;
       _transforms[o + 1] = 0.0;
@@ -184,14 +197,23 @@ class BattleSceneRenderer extends Component {
       final anchorX = origin.dx + projection.screenX(s.worldX);
       final anchorY = origin.dy +
           projection.screenY(s.groundY, s.worldZ + castle.forwardOffsetZ);
-      final scale = castle.worldWidth * projection.pixelsPerUnit / castle.pixelWidth;
+      final scale = castle.worldWidth *
+          projection.pixelsPerUnit *
+          1.35 /
+          castle.pixelWidth;
       final w = castle.pixelWidth * scale;
       final h = castle.pixelHeight * scale;
       canvas.drawImageRect(
         s.image.image,
-        ui.Rect.fromLTWH(0, 0, castle.pixelWidth.toDouble(), castle.pixelHeight.toDouble()),
-        ui.Rect.fromLTWH(anchorX - w / 2, anchorY - h * castle.groundAnchorFraction, w, h),
-        ui.Paint()..filterQuality = ui.FilterQuality.medium,
+        ui.Rect.fromLTWH(
+            0, 0, castle.pixelWidth.toDouble(), castle.pixelHeight.toDouble()),
+        ui.Rect.fromLTWH(
+            anchorX - w / 2, anchorY - h * castle.groundAnchorFraction, w, h),
+        ui.Paint()
+          ..filterQuality = ui.FilterQuality.medium
+          ..color = (s.towerIndex != null && !round.towers[s.towerIndex!].alive)
+              ? const ui.Color(0x66FFFFFF)
+              : const ui.Color(0xFFFFFFFF),
       );
       return;
     }
@@ -202,9 +224,27 @@ class BattleSceneRenderer extends Component {
     final h = gate.worldHeight * projection.pixelsPerUnit;
     canvas.drawImageRect(
       s.image.image,
-      ui.Rect.fromLTWH(0, 0, gate.pixelWidth.toDouble(), gate.pixelHeight.toDouble()),
-      ui.Rect.fromLTWH(anchorX - w / 2, anchorY - h * gate.groundAnchorFraction, w, h),
+      ui.Rect.fromLTWH(
+          0, 0, gate.pixelWidth.toDouble(), gate.pixelHeight.toDouble()),
+      ui.Rect.fromLTWH(
+          anchorX - w / 2, anchorY - h * gate.groundAnchorFraction, w, h),
       ui.Paint()..filterQuality = ui.FilterQuality.medium,
     );
+  }
+
+  void _drawDefenceLine(ui.Canvas canvas) {
+    final y = origin.dy + projection.screenY(0, 6.55);
+    final left = origin.dx + projection.screenX(-4.45);
+    final right = origin.dx + projection.screenX(4.45);
+    final paint = ui.Paint()
+      ..color = const ui.Color(0xCFFFFFFF)
+      ..strokeWidth = math.max(2, projection.pixelsPerUnit * 0.09)
+      ..strokeCap = ui.StrokeCap.round;
+    final dash = projection.pixelsPerUnit * 0.55;
+    final gap = projection.pixelsPerUnit * 0.34;
+    for (double x = left; x < right; x += dash + gap) {
+      canvas.drawLine(
+          ui.Offset(x, y), ui.Offset(math.min(x + dash, right), y), paint);
+    }
   }
 }

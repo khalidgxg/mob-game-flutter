@@ -11,33 +11,12 @@ import 'sfx.dart';
 import 'shop_screen.dart';
 import 'ui_theme.dart';
 
-/// Port of `HomeMenu.cs` (708 lines of hand-anchored `RectTransform` code) —
-/// same five bands top to bottom (header, title, campaign hero, BATTLE CTA,
-/// bottom nav), same vertical rhythm, but as ordinary Flutter layout instead
-/// of normalized-rect math. `SafeArea` replaces `SafeAreaFitter`; `Column` +
-/// `Expanded` flex weights replace `SetNormalizedRect`'s five hand-tuned
-/// bands (kept proportional to the same numbers: header 55, title 62, hero
-/// 572, play 97, nav 118, out of ~1000 — see `HomeMenu`'s `NavTop`/`PlayTop`/
-/// `HeroTop`/`TitleTop`/`HeaderTop` constants this mirrors).
+/// Flutter-native reconstruction of the approved MobRush Home composition.
 ///
-/// Real persistence: `profile` is loaded from `SharedPreferences` through
-/// `ProfileService` (the Flutter equivalent of `LocalJsonSaveStore.cs`) on
-/// first build, and saved back after every round (see `Stage1Screen`'s
-/// `_handleOutcome`, which computes the reward with the same
-/// `RewardCalculator`/`StarRating` the live game uses).
-///
-/// Real art: `CastleHero.png`, `LogoWordmark.png`, and the header/nav icon
-/// set are copied straight from `Assets/Resources/Home/` — the same
-/// approved assets `HomeMenu.BuildCastleArt`/`BuildTitle` load in the live
-/// game, not placeholders. Reusing an already-approved project asset is
-/// the fal.ai policy's first priority, ahead of generating anything new.
-///
-/// Chrome comes from `ui_theme.dart`, shared with Shop and the battle HUD
-/// so the three screens cannot drift into looking like three apps.
-///
-/// Not yet done: the settings modal is a single placeholder dialog —
-/// `HomeMenu.cs`'s sound toggle, How To Play, and secret-code panel aren't
-/// ported.
+/// The screen uses normal widgets for every interactive element and
+/// [CustomPainter] for the scalable theatrical backdrop, side banners,
+/// torches, stone dais, CTA frame, and navigation chrome. The only raster
+/// assets are the approved logo, castle, and icon artwork.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -46,471 +25,303 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const _designWidth = 388.0;
+  static const _designHeight = 689.0;
+  static const _designAspect = _designWidth / _designHeight;
+
   final ProfileService _service = ProfileService();
   PlayerProfile? _profile;
 
-  /// Non-null accessor for the widgets below, which only ever get built
-  /// once `build()` has confirmed `_profile` finished loading.
   PlayerProfile get profile => _profile!;
 
   @override
   void initState() {
     super.initState();
-    _service.load().then((p) {
-      if (mounted) setState(() => _profile = p);
+    _service.load().then((loaded) {
+      if (mounted) setState(() => _profile = loaded);
     });
     Sfx.instance.init().then((_) => Sfx.instance.setMenuMusic());
   }
-
-  // Local aliases onto the shared palette, kept so the layout code below
-  // reads the same as it did before the theme was extracted.
-  static const _bgCore = MobRushTheme.bgCore;
-  static const _bgNavy = MobRushTheme.bgNavy;
-  static const _bgDeep = MobRushTheme.bgDeep;
-  static const _titleBlue = MobRushTheme.blueLight;
-  static const _gold = MobRushTheme.gold;
-  static const _goldBright = MobRushTheme.goldBright;
-  static const _goldDeep = MobRushTheme.goldDeep;
-  static const _goldEdge = MobRushTheme.goldEdge;
-  static const _plusGreen = MobRushTheme.green;
-
-  /// Translucent blue glass, brighter at the top — the fill every framed
-  /// panel in the reference uses.
-  static const _glassFill = MobRushTheme.glassFill;
-
-  /// The same glass, lit from within — used by the active nav tab.
-  static const _glassActive = MobRushTheme.glassActive;
-
-  int get _totalStages => 3; // Stage 1-3 content authored so far.
-  int get _completedStages =>
-      profile.stageStars.where((e) => e.stars > 0).length;
 
   @override
   Widget build(BuildContext context) {
     if (_profile == null) {
       return const Scaffold(
-        backgroundColor: _bgNavy,
-        body: Center(child: CircularProgressIndicator(color: _titleBlue)),
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: MobRushTheme.blueLight),
+        ),
       );
     }
+
     return Scaffold(
-      backgroundColor: _bgDeep,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.05),
-            radius: 1.0,
-            colors: [_bgCore, _bgNavy, _bgDeep],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: CustomPaint(
-          // Light rays fanning out from behind the castle — the reference's
-          // backdrop is not a plain gradient, and without these the screen
-          // reads flat no matter how good the chrome is.
-          painter: _RayPainter(),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Column(
-                children: [
-                  const SizedBox(height: 6),
-                  Expanded(flex: 60, child: _buildHeader()),
-                  const SizedBox(height: 6),
-                  Expanded(flex: 118, child: _buildTitle()),
-                  Expanded(flex: 520, child: _buildCampaignHero()),
-                  Expanded(flex: 104, child: _buildPlayButton()),
-                  const SizedBox(height: 10),
-                  Expanded(flex: 118, child: _buildBottomNav()),
-                  const SizedBox(height: 4),
-                ],
+      backgroundColor: Colors.black,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = math.min(
+            constraints.maxWidth,
+            constraints.maxHeight * _designAspect,
+          );
+          final height = width / _designAspect;
+          return Center(
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: FittedBox(
+                fit: BoxFit.fill,
+                child: SizedBox(
+                  width: _designWidth,
+                  height: _designHeight,
+                  child: _buildBoard(),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  // --- Header: player card, currency chips, settings ----------------------
-
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Expanded(flex: 44, child: _playerCard()),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 23,
-          child: _currencyChip(profile.currency.toString(), 'assets/home/icons/icon_coin.png'),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 23,
-          child: _currencyChip(profile.gems.toString(), 'assets/home/icons/icon_gem.png'),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 13,
-          child: _goldFrame(
-            onTap: _showSettings,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Image.asset('assets/home/icons/icon_gear.png'),
+  Widget _buildBoard() {
+    return ClipRect(
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: CustomPaint(painter: _HomeBackdropPainter()),
+          ),
+          const Positioned.fill(
+            child: CustomPaint(painter: _HeroStagePainter()),
+          ),
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(8, 12, 146, 58),
+            child: _playerPanel(),
+          ),
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(161, 16, 93, 50),
+            child: _currencyPanel(
+              profile.currency.toString(),
+              'assets/home/icons/icon_coin.png',
+            ),
+          ),
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(258, 16, 79, 50),
+            child: _currencyPanel(
+              profile.gems.toString(),
+              'assets/home/icons/icon_gem.png',
+            ),
+          ),
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(341, 16, 39, 50),
+            child: _gearPanel(),
+          ),
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(34, 68, 320, 96),
+            child: Transform.scale(
+              scaleX: 1.08,
+              child: Image.asset(
+                'assets/home/LogoWordmark.png',
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
               ),
             ),
           ),
-        ),
-      ],
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(52, 150, 284, 378),
+            child: Transform.scale(
+              scaleX: 1.08,
+              alignment: Alignment.bottomCenter,
+              child: Image.asset(
+                'assets/home/CastleHero.png',
+                fit: BoxFit.contain,
+                alignment: Alignment.bottomCenter,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
+          ),
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(42, 514, 304, 84),
+            child: _BattleButton(onTap: _startBattle),
+          ),
+          Positioned.fromRect(
+            rect: const Rect.fromLTWH(8, 600, 372, 81),
+            child: _BottomNav(
+              onHome: () => Sfx.instance.play('click'),
+              onBattle: _startBattle,
+              onShop: _openShop,
+              onMap: _openMap,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Portrait in a gold ring, name stacked over a LV pill — the reference's
-  /// layout, not the single flat row the first pass used.
-  Widget _playerCard() {
-    return _goldFrame(
+  Widget _playerPanel() {
+    return _HudPanel(
       child: Row(
         children: [
           const SizedBox(width: 5),
           Container(
-            width: 36,
-            height: 36,
+            width: 47,
+            height: 47,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const RadialGradient(
-                colors: [Color(0xFF14418C), Color(0xFF061431)],
+                colors: [Color(0xFF1C67D5), Color(0xFF06163B)],
               ),
-              border: Border.all(color: _gold, width: 2),
+              border: Border.all(color: const Color(0xFFFFC438), width: 2.2),
+              boxShadow: const [
+                BoxShadow(color: Color(0xAA008CFF), blurRadius: 7),
+              ],
             ),
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(5),
             child: Image.asset('assets/home/icons/icon_helmet.png'),
           ),
-          const SizedBox(width: 7),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'COMMANDER',
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                    letterSpacing: 0.4,
+                const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'COMMANDER',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.35,
+                      shadows: [Shadow(color: Colors.black, blurRadius: 3)],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 3),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+                  height: 15,
+                  constraints: const BoxConstraints(minWidth: 39),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0x66041028),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: _goldEdge, width: 1),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF20A5FF), Color(0xFF075AE2)],
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                    border:
+                        Border.all(color: const Color(0xFF63D6FF), width: 0.8),
                   ),
-                  child: Text(
-                    'LV ${profile.playerLevel}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'LV ${profile.playerLevel}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
         ],
       ),
     );
   }
 
-  Widget _currencyChip(String value, String iconAsset) {
-    return _goldFrame(
+  Widget _currencyPanel(String value, String iconAsset) {
+    return _HudPanel(
+      radius: 8,
       child: Row(
         children: [
           const SizedBox(width: 5),
-          SizedBox(width: 22, height: 22, child: Image.asset(iconAsset)),
-          const SizedBox(width: 5),
+          SizedBox(width: 27, height: 27, child: Image.asset(iconAsset)),
+          const SizedBox(width: 3),
           Expanded(
-            child: Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          // The reference puts a green "+" affordance on every currency chip.
-          Container(
-            width: 18,
-            height: 18,
-            margin: const EdgeInsets.only(right: 5),
-            decoration: const BoxDecoration(shape: BoxShape.circle, color: _plusGreen),
-            child: const Icon(Icons.add, size: 13, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// The reference's signature chrome, and the thing whose absence made the
-  /// first pass read as a wireframe: translucent blue glass over the
-  /// backdrop, a bright hairline catching light along the top edge, a warm
-  /// gold rim, and a soft drop shadow lifting it off the page.
-  Widget _goldFrame({
-    required Widget child,
-    VoidCallback? onTap,
-    double radius = 12,
-    Gradient gradient = _glassFill,
-    List<BoxShadow> glow = const [],
-  }) {
-    final panel = Container(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: _goldEdge, width: 2),
-        boxShadow: [
-          const BoxShadow(color: Color(0x59000814), blurRadius: 10, offset: Offset(0, 3)),
-          ...glow,
-        ],
-      ),
-      child: child,
-    );
-    return onTap == null ? panel : GestureDetector(onTap: onTap, child: panel);
-  }
-
-  // --- Title ----------------------------------------------------------------
-
-  Widget _buildTitle() {
-    return Center(
-      child: Image.asset('assets/home/LogoWordmark.png', fit: BoxFit.contain),
-    );
-  }
-
-  // --- Campaign hero: castle art + progression -----------------------------
-
-  Widget _buildCampaignHero() {
-    final currentStage = (_completedStages + 1).clamp(1, _totalStages);
-    final currentStageStars = profile.getStageStars('stage_$currentStage');
-    // No card frame here: in the reference the castle sits directly on the
-    // background glow, which is what gives the screen its depth. Boxing it
-    // in a panel (the first pass) flattened the whole composition.
-    return Column(
-      children: [
-        Expanded(
-          child: Image.asset('assets/home/CastleHero.png', fit: BoxFit.contain),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'STAGE $currentStage / $_totalStages',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            fontSize: 15,
-            letterSpacing: 0.6,
-            shadows: [Shadow(blurRadius: 6, color: Colors.black87)],
-          ),
-        ),
-        const SizedBox(height: 3),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            3,
-            (i) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 1),
-              child: Icon(
-                Icons.star,
-                size: 17,
-                color: i < currentStageStars ? _gold : Colors.white24,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --- Primary CTA ------------------------------------------------------------
-
-  /// The reference's BATTLE button is a beveled gold slab: bright top edge,
-  /// deep amber bottom, a lighter inner face, and a warm glow beneath it.
-  Widget _buildPlayButton() {
-    return GestureDetector(
-      onTap: _startBattle,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        padding: const EdgeInsets.all(4),
-        // Outer navy glass rail, exactly as the reference frames its CTA —
-        // the gold slab is inset inside it, not floating bare on the page.
-        decoration: BoxDecoration(
-          gradient: _glassFill,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _goldEdge, width: 2),
-          boxShadow: const [
-            BoxShadow(color: Color(0x59FFA415), blurRadius: 24, spreadRadius: 1),
-            BoxShadow(color: Color(0x59000814), blurRadius: 10, offset: Offset(0, 3)),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [_goldBright, _gold, _goldDeep],
-              stops: [0.0, 0.42, 1.0],
-            ),
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: const Color(0xFFFFF0B0), width: 1.5),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 32,
-                height: 32,
-                child: Image.asset('assets/home/icons/icon_battle_cta.png'),
-              ),
-              const SizedBox(width: 14),
-              const Text(
-                'BATTLE',
-                style: TextStyle(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Text(
+                value,
+                style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 28,
+                  fontSize: 13,
+                  height: 1,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.8,
-                  shadows: [
-                    Shadow(blurRadius: 3, offset: Offset(0, 1.5), color: Color(0xB38A4A00)),
-                  ],
+                  shadows: [Shadow(color: Colors.black, blurRadius: 3)],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  // --- Bottom nav -------------------------------------------------------------
-
-  Widget _buildBottomNav() {
-    final items = [
-      (_NavTab.home, 'assets/home/icons/icon_home.png', 'HOME'),
-      (_NavTab.battle, 'assets/home/icons/icon_battle.png', 'BATTLE'),
-      (_NavTab.shop, 'assets/home/icons/icon_shop.png', 'SHOP'),
-      (_NavTab.map, 'assets/home/icons/icon_map.png', 'MAP'),
-    ];
-    return _goldFrame(
-      radius: 14,
-      child: Padding(
-        padding: const EdgeInsets.all(5),
-        child: Row(
-          children: items.map((item) {
-            final active = item.$1 == _NavTab.home;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => _onNavTap(item.$1),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                  decoration: BoxDecoration(
-                    // The selected tab carries its own light: a lit glass
-                    // gradient, a gold rim, and a blue halo spilling onto the
-                    // bar around it. That halo is the single clearest "this is
-                    // selected" cue in the reference.
-                    gradient: active ? _glassActive : _glassFill,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: active ? _gold : const Color(0x33FFFFFF),
-                      width: active ? 2 : 1,
-                    ),
-                    boxShadow: active
-                        ? const [
-                            BoxShadow(color: Color(0x8C2E86F5), blurRadius: 16, spreadRadius: 1),
-                          ]
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 30,
-                        height: 30,
-                        child: Opacity(
-                          opacity: active ? 1 : 0.72,
-                          child: Image.asset(item.$2),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.$3,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.4,
-                          color: active ? Colors.white : const Color(0xFF8FA8D4),
-                          shadows: active
-                              ? const [Shadow(blurRadius: 4, color: Color(0xAA00204D))]
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+          Container(
+            width: 16,
+            height: 16,
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF68E784), Color(0xFF13A83F)],
               ),
-            );
-          }).toList(),
-        ),
+              border: Border.all(color: const Color(0xFF93FFAA), width: 0.8),
+            ),
+            child: const Icon(Icons.add, size: 12, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
 
-  void _onNavTap(_NavTab tab) {
-    Sfx.instance.play('click');
-    switch (tab) {
-      case _NavTab.home:
-        break;
-      case _NavTab.battle:
-        _startBattle();
-      case _NavTab.map:
-        _openMap();
-      case _NavTab.shop:
-        _openShop();
-    }
+  Widget _gearPanel() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _showSettings,
+      child: _HudPanel(
+        radius: 8,
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: Image.asset('assets/home/icons/icon_gear.png'),
+        ),
+      ),
+    );
   }
 
   Future<void> _openShop() async {
+    Sfx.instance.play('click');
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ShopScreen()),
     );
-    // Currency can change in the shop; reload so Home's chip stays honest.
     final result = await _service.load();
     if (mounted) setState(() => _profile = result);
   }
 
   Future<void> _openMap() async {
+    Sfx.instance.play('click');
     final result = await Navigator.of(context).push<PlayerProfile>(
       MaterialPageRoute(
-        builder: (_) => CampaignMapScreen(profile: profile, profileService: _service),
+        builder: (_) => CampaignMapScreen(
+          profile: profile,
+          profileService: _service,
+        ),
       ),
     );
     if (result != null && mounted) setState(() => _profile = result);
   }
 
   Future<void> _startBattle() async {
+    Sfx.instance.play('click');
     final result = await Navigator.of(context).push<PlayerProfile>(
       MaterialPageRoute(
-        builder: (_) => Stage1Screen(profile: profile, profileService: _service),
+        builder: (_) => Stage1Screen(
+          profile: profile,
+          profileService: _service,
+        ),
       ),
     );
     if (result != null && mounted) setState(() => _profile = result);
-    // Back on Home, the bed goes back to the menu theme — the C# does the
-    // same through `Sfx.SetMenuMusic` on its own Home transition.
     Sfx.instance.setMenuMusic();
   }
 
@@ -520,14 +331,17 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF0D1523),
-          title: const Text('SETTINGS',
-              style: TextStyle(color: _titleBlue, fontWeight: FontWeight.w900)),
+          backgroundColor: const Color(0xFF07152F),
+          title: const Text(
+            'SETTINGS',
+            style: TextStyle(
+              color: MobRushTheme.blueLight,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Port of `HomeMenu.ToggleSound`. Muting stops the beds rather
-              // than zeroing them, so a muted app isn't still decoding audio.
               GameButton(
                 label: Sfx.instance.muted ? 'SOUND : OFF' : 'SOUND : ON',
                 gradient: Sfx.instance.muted
@@ -543,8 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 14),
               const Text(
-                'How to Play and secret code entry are not ported from '
-                'HomeMenu.cs yet.',
+                'How to Play and secret code entry are not ported yet.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white54, fontSize: 11),
               ),
@@ -560,52 +373,719 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 }
 
-enum _NavTab { home, battle, shop, map }
+class _HudPanel extends StatelessWidget {
+  const _HudPanel({required this.child, this.radius = 10});
 
-/// Soft light rays fanning out from behind the castle, as in the reference
-/// backdrop. Drawn rather than baked so they cost no texture memory and
-/// scale to any screen: each ray is a thin triangle from a point above the
-/// castle, faded out along its length.
-class _RayPainter extends CustomPainter {
-  static const _rayCount = 14;
+  final Widget child;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0D4A97), Color(0xFF061D4E), Color(0xFF020D28)],
+          stops: [0.0, 0.16, 1.0],
+        ),
+        border: Border.all(color: const Color(0xFF168CFF), width: 1.4),
+        boxShadow: const [
+          BoxShadow(color: Color(0x99006CFF), blurRadius: 8, spreadRadius: 0.5),
+          BoxShadow(color: Colors.black87, blurRadius: 5, offset: Offset(0, 3)),
+        ],
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radius - 2),
+          border: Border.all(color: const Color(0xFFD89D27), width: 0.9),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xE6123977), Color(0xF2051539)],
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _BattleButton extends StatelessWidget {
+  const _BattleButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Battle',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const CustomPaint(painter: _BattleButtonPainter()),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Image.asset('assets/home/icons/icon_battle_cta.png'),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'BATTLE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 31,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                    shadows: [
+                      Shadow(
+                          color: Color(0xFF6D2D00),
+                          blurRadius: 1,
+                          offset: Offset(0, 2)),
+                      Shadow(
+                          color: Colors.black54,
+                          blurRadius: 5,
+                          offset: Offset(0, 3)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNav extends StatelessWidget {
+  const _BottomNav({
+    required this.onHome,
+    required this.onBattle,
+    required this.onShop,
+    required this.onMap,
+  });
+
+  final VoidCallback onHome;
+  final VoidCallback onBattle;
+  final VoidCallback onShop;
+  final VoidCallback onMap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: const _BottomNavPainter(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 5),
+        child: Row(
+          children: [
+            _NavItem(
+              active: true,
+              icon: 'assets/home/icons/icon_home.png',
+              label: 'HOME',
+              onTap: onHome,
+            ),
+            _NavItem(
+              icon: 'assets/home/icons/icon_battle.png',
+              label: 'BATTLE',
+              onTap: onBattle,
+            ),
+            _NavItem(
+              icon: 'assets/home/icons/icon_shop.png',
+              label: 'SHOP',
+              onTap: onShop,
+            ),
+            _NavItem(
+              icon: 'assets/home/icons/icon_map.png',
+              label: 'MAP',
+              onTap: onMap,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: label,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 1),
+            decoration: active
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF159FFF),
+                        Color(0xFF075FF0),
+                        Color(0xFF013599)
+                      ],
+                    ),
+                    border:
+                        Border.all(color: const Color(0xFF6CD8FF), width: 1.4),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Color(0xCC007DFF),
+                          blurRadius: 9,
+                          spreadRadius: 1),
+                    ],
+                  )
+                : null,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: active ? 36 : 32,
+                  height: active ? 36 : 32,
+                  child: Image.asset(icon),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: active ? Colors.white : const Color(0xFFCBD9F7),
+                    fontSize: 8.5,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.35,
+                    shadows: const [Shadow(color: Colors.black, blurRadius: 3)],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeBackdropPainter extends CustomPainter {
+  const _HomeBackdropPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
-    final origin = Offset(size.width / 2, size.height * 0.30);
-    final length = size.height * 0.75;
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(size.width / 2, 0),
+          Offset(size.width / 2, size.height),
+          const [Color(0xFF06132E), Color(0xFF05275D), Color(0xFF010817)],
+          const [0.0, 0.48, 1.0],
+        ),
+    );
 
-    for (var i = 0; i < _rayCount; i++) {
-      final angle = (i / _rayCount) * 2 * math.pi + 0.12;
-      // Alternating widths keep the fan from looking mechanical.
-      final halfSpread = i.isEven ? 0.030 : 0.017;
-      final path = Path()
+    final origin = Offset(size.width / 2, size.height * 0.22);
+    for (var i = 0; i < 16; i++) {
+      final angle = -math.pi * 0.96 + i * (math.pi * 1.92 / 15);
+      final spread = i.isEven ? 0.055 : 0.032;
+      final length = size.height * 0.92;
+      final ray = Path()
         ..moveTo(origin.dx, origin.dy)
         ..lineTo(
-          origin.dx + math.cos(angle - halfSpread) * length,
-          origin.dy + math.sin(angle - halfSpread) * length,
+          origin.dx + math.cos(angle - spread) * length,
+          origin.dy + math.sin(angle - spread) * length,
         )
         ..lineTo(
-          origin.dx + math.cos(angle + halfSpread) * length,
-          origin.dy + math.sin(angle + halfSpread) * length,
+          origin.dx + math.cos(angle + spread) * length,
+          origin.dy + math.sin(angle + spread) * length,
         )
         ..close();
-
       canvas.drawPath(
-        path,
+        ray,
         Paint()
           ..shader = ui.Gradient.radial(
             origin,
             length,
-            const [Color(0x009CC8FF), Color(0x1A8FC0FF), Color(0x00000000)],
-            const [0.0, 0.28, 0.9],
+            const [Color(0x2449A9FF), Color(0x0D2E83D3), Color(0x00001133)],
+            const [0.0, 0.45, 1.0],
           ),
+      );
+    }
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(size.width / 2, size.height * 0.47),
+          size.width * 0.78,
+          const [Color(0x001B66C2), Color(0x15000A1C), Color(0xB800020A)],
+          const [0.0, 0.63, 1.0],
+        ),
+    );
+
+    const sparks = <Offset>[
+      Offset(28, 181),
+      Offset(48, 224),
+      Offset(360, 188),
+      Offset(344, 238),
+      Offset(21, 496),
+      Offset(371, 505),
+      Offset(61, 329),
+      Offset(326, 314),
+      Offset(92, 189),
+      Offset(302, 206),
+      Offset(44, 547),
+      Offset(350, 554),
+    ];
+    for (var i = 0; i < sparks.length; i++) {
+      final radius = i.isEven ? 1.3 : 0.8;
+      canvas.drawCircle(
+        sparks[i],
+        radius,
+        Paint()
+          ..color =
+              i.isEven ? const Color(0xFFFFB52C) : const Color(0xFF4BA8FF),
+      );
+    }
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = const Color(0xFF071A38),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HomeBackdropPainter oldDelegate) => false;
+}
+
+class _HeroStagePainter extends CustomPainter {
+  const _HeroStagePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _drawCastleGlow(canvas);
+    _drawPlatform(canvas);
+    _drawBanner(canvas, 31);
+    _drawBanner(canvas, size.width - 31, mirrored: true);
+    _drawTorch(canvas, 35);
+    _drawTorch(canvas, size.width - 35);
+  }
+
+  void _drawCastleGlow(Canvas canvas) {
+    const center = Offset(194, 403);
+    canvas.drawCircle(
+      center,
+      164,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          center,
+          164,
+          const [Color(0x4D168DFF), Color(0x1C0965D8), Color(0x00051A46)],
+          const [0.0, 0.56, 1.0],
+        ),
+    );
+  }
+
+  void _drawPlatform(Canvas canvas) {
+    const glowRect = Rect.fromLTWH(22, 451, 344, 103);
+    canvas.drawOval(
+      glowRect.inflate(10),
+      Paint()
+        ..shader = ui.Gradient.radial(
+          glowRect.center,
+          190,
+          const [Color(0x66007FFF), Color(0x22004A9E), Color(0x00001635)],
+          const [0.0, 0.62, 1.0],
+        ),
+    );
+    canvas.drawOval(
+      glowRect,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          glowRect.topCenter,
+          glowRect.bottomCenter,
+          const [Color(0xFF31558A), Color(0xFF0B1B38), Color(0xFF020817)],
+          const [0.0, 0.42, 1.0],
+        ),
+    );
+    canvas.drawOval(
+      glowRect.deflate(7),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFF152B4E),
+    );
+    canvas.drawArc(
+      glowRect.deflate(3),
+      math.pi,
+      math.pi,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..color = const Color(0xFF4A77A9),
+    );
+    for (var i = 0; i < 11; i++) {
+      final angle = math.pi + (i / 10) * math.pi;
+      final outer = Offset(
+        glowRect.center.dx + math.cos(angle) * glowRect.width / 2,
+        glowRect.center.dy + math.sin(angle) * glowRect.height / 2,
+      );
+      final inner = Offset(
+        glowRect.center.dx + math.cos(angle) * (glowRect.width / 2 - 20),
+        glowRect.center.dy + math.sin(angle) * (glowRect.height / 2 - 7),
+      );
+      canvas.drawLine(
+        inner,
+        outer,
+        Paint()
+          ..strokeWidth = 1.2
+          ..color = const Color(0xFF07101F),
+      );
+    }
+  }
+
+  void _drawBanner(Canvas canvas, double poleX, {bool mirrored = false}) {
+    const top = 238.0;
+    const bottom = 425.0;
+    final polePaint = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(poleX - 2, 0),
+        Offset(poleX + 2, 0),
+        const [Color(0xFF6D3500), Color(0xFFFFD34A), Color(0xFF8B4700)],
+        const [0.0, 0.5, 1.0],
+      );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(poleX - 2.2, top, 4.4, bottom - top),
+        const Radius.circular(2),
+      ),
+      polePaint,
+    );
+    canvas.drawCircle(Offset(poleX, top - 5), 5, polePaint);
+    final crossStart = mirrored ? poleX - 30 : poleX - 4;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(crossStart, top + 7, 34, 4),
+        const Radius.circular(2),
+      ),
+      polePaint,
+    );
+    canvas.drawCircle(
+        Offset(mirrored ? poleX - 31 : poleX + 31, top + 9), 3.2, polePaint);
+
+    final left = mirrored ? poleX - 29 : poleX + 4;
+    final right = mirrored ? poleX - 4 : poleX + 29;
+    final cloth = Path()
+      ..moveTo(left, top + 13)
+      ..lineTo(right, top + 13)
+      ..lineTo(right, bottom - 18)
+      ..lineTo((left + right) / 2, bottom)
+      ..lineTo(left, bottom - 18)
+      ..close();
+    final clothRect = Rect.fromLTRB(
+      math.min(left, right),
+      top + 13,
+      math.max(left, right),
+      bottom,
+    );
+    canvas.drawPath(
+      cloth,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          clothRect.topLeft,
+          clothRect.topRight,
+          const [Color(0xFF031742), Color(0xFF0C58BE), Color(0xFF031239)],
+          const [0.0, 0.5, 1.0],
+        ),
+    );
+    canvas.drawPath(
+      cloth,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFFD58C14),
+    );
+    canvas.drawLine(
+      Offset(left + 3, top + 18),
+      Offset(left + 3, bottom - 20),
+      Paint()
+        ..strokeWidth = 1
+        ..color = const Color(0xFFFFC23B),
+    );
+    canvas.drawLine(
+      Offset(right - 3, top + 18),
+      Offset(right - 3, bottom - 20),
+      Paint()
+        ..strokeWidth = 1
+        ..color = const Color(0xFFFFC23B),
+    );
+
+    const crownY = top + 83;
+    final crown = Path()
+      ..moveTo(clothRect.center.dx - 8, crownY + 7)
+      ..lineTo(clothRect.center.dx - 9, crownY - 3)
+      ..lineTo(clothRect.center.dx - 3, crownY + 1)
+      ..lineTo(clothRect.center.dx, crownY - 7)
+      ..lineTo(clothRect.center.dx + 3, crownY + 1)
+      ..lineTo(clothRect.center.dx + 9, crownY - 3)
+      ..lineTo(clothRect.center.dx + 8, crownY + 7)
+      ..close();
+    canvas.drawPath(crown, Paint()..color = const Color(0xFFFFB718));
+  }
+
+  void _drawTorch(Canvas canvas, double x) {
+    const bowlY = 447.0;
+    final glowCenter = Offset(x, bowlY - 13);
+    canvas.drawCircle(
+      glowCenter,
+      34,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          glowCenter,
+          34,
+          const [Color(0xAAFFB000), Color(0x44FF6500), Color(0x00FF3B00)],
+          const [0.0, 0.55, 1.0],
+        ),
+    );
+    final stone = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(x - 16, 0),
+        Offset(x + 16, 0),
+        const [Color(0xFF030813), Color(0xFF31496B), Color(0xFF071020)],
+        const [0.0, 0.48, 1.0],
+      );
+    final stoneEdge = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = const Color(0xFF536B89);
+    final foot = Path()
+      ..moveTo(x - 17, 499)
+      ..lineTo(x + 17, 499)
+      ..lineTo(x + 14, 489)
+      ..lineTo(x - 14, 489)
+      ..close();
+    canvas.drawPath(foot, stone);
+    canvas.drawPath(foot, stoneEdge);
+    final column = RRect.fromRectAndRadius(
+      Rect.fromLTWH(x - 9, 459, 18, 31),
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(column, stone);
+    canvas.drawRRect(column, stoneEdge);
+    canvas.drawRect(Rect.fromLTWH(x - 13, 454, 26, 7), stone);
+    canvas.drawRect(
+      Rect.fromLTWH(x - 13, 454, 26, 7),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1
+        ..color = const Color(0xFF6A7E98),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(x - 8, 467, 16, 3),
+      Paint()..color = const Color(0xFF0B1A31),
+    );
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(x, bowlY + 4), width: 29, height: 10),
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(x - 15, 0),
+          Offset(x + 15, 0),
+          const [Color(0xFF6E3100), Color(0xFFFFC02C), Color(0xFF6D2A00)],
+          const [0.0, 0.5, 1.0],
+        ),
+    );
+    final flame = Path()
+      ..moveTo(x, bowlY)
+      ..cubicTo(x - 15, bowlY - 9, x - 7, bowlY - 25, x + 1, bowlY - 34)
+      ..cubicTo(x + 2, bowlY - 21, x + 14, bowlY - 20, x + 10, bowlY - 8)
+      ..cubicTo(x + 7, bowlY - 2, x + 3, bowlY, x, bowlY)
+      ..close();
+    canvas.drawPath(flame, Paint()..color = const Color(0xFFFF7A00));
+    final core = Path()
+      ..moveTo(x, bowlY - 2)
+      ..cubicTo(x - 7, bowlY - 10, x - 2, bowlY - 21, x + 2, bowlY - 26)
+      ..cubicTo(x + 3, bowlY - 17, x + 8, bowlY - 12, x + 4, bowlY - 5)
+      ..close();
+    canvas.drawPath(core, Paint()..color = const Color(0xFFFFF2A1));
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeroStagePainter oldDelegate) => false;
+}
+
+class _BattleButtonPainter extends CustomPainter {
+  const _BattleButtonPainter();
+
+  Path _beveled(Rect rect, double cut) {
+    return Path()
+      ..moveTo(rect.left + cut, rect.top)
+      ..lineTo(rect.right - cut, rect.top)
+      ..lineTo(rect.right, rect.top + cut)
+      ..lineTo(rect.right - cut * 0.45, rect.bottom - cut)
+      ..lineTo(rect.right - cut * 1.35, rect.bottom)
+      ..lineTo(rect.left + cut * 1.35, rect.bottom)
+      ..lineTo(rect.left + cut * 0.45, rect.bottom - cut)
+      ..lineTo(rect.left, rect.top + cut)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = _beveled(Offset.zero & size, 13);
+    canvas.drawPath(
+      outer,
+      Paint()
+        ..color = const Color(0x990074FF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+    canvas.drawPath(
+      outer,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          const Offset(0, 0),
+          Offset(0, size.height),
+          const [Color(0xFF153F78), Color(0xFF031229), Color(0xFF071A3B)],
+          const [0.0, 0.52, 1.0],
+        ),
+    );
+    canvas.drawPath(
+      outer,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2
+        ..color = const Color(0xFF0F75DE),
+    );
+
+    final middle =
+        _beveled(Rect.fromLTWH(5, 4, size.width - 10, size.height - 8), 11);
+    canvas.drawPath(middle, Paint()..color = const Color(0xFFFFB51E));
+    canvas.drawPath(
+      middle,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..color = const Color(0xFFFFE16D),
+    );
+
+    final face =
+        _beveled(Rect.fromLTWH(11, 10, size.width - 22, size.height - 20), 8);
+    canvas.drawPath(
+      face,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          const Offset(0, 10),
+          Offset(0, size.height - 10),
+          const [Color(0xFFFFD238), Color(0xFFFF9E00), Color(0xFFD95700)],
+          const [0.0, 0.48, 1.0],
+        ),
+    );
+    canvas.drawPath(
+      face,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = const Color(0xFFFFF2A7),
+    );
+    canvas.drawLine(
+      const Offset(27, 13),
+      Offset(size.width - 27, 13),
+      Paint()
+        ..strokeWidth = 1.3
+        ..color = const Color(0xFFFFEE96),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BattleButtonPainter oldDelegate) => false;
+}
+
+class _BottomNavPainter extends CustomPainter {
+  const _BottomNavPainter();
+
+  Path _frame(Size size) {
+    return Path()
+      ..moveTo(10, 0)
+      ..lineTo(size.width - 10, 0)
+      ..lineTo(size.width, 10)
+      ..lineTo(size.width, size.height - 10)
+      ..lineTo(size.width - 10, size.height)
+      ..lineTo(10, size.height)
+      ..lineTo(0, size.height - 10)
+      ..lineTo(0, 10)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _frame(size);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(size.width / 2, 0),
+          Offset(size.width / 2, size.height),
+          const [Color(0xFF103A72), Color(0xFF061933), Color(0xFF020A1B)],
+          const [0.0, 0.28, 1.0],
+        ),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFF126DCA),
+    );
+    canvas.drawPath(
+      _frame(Size(size.width - 4, size.height - 4)).shift(const Offset(2, 2)),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9
+        ..color = const Color(0xFFB17B1D),
+    );
+    for (var i = 1; i < 4; i++) {
+      final x = size.width * i / 4;
+      canvas.drawLine(
+        Offset(x, 8),
+        Offset(x, size.height - 7),
+        Paint()
+          ..strokeWidth = 1
+          ..color = const Color(0xFF123667),
       );
     }
   }
 
   @override
-  bool shouldRepaint(covariant _RayPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _BottomNavPainter oldDelegate) => false;
 }

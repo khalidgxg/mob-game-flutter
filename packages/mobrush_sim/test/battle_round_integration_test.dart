@@ -17,7 +17,8 @@ const _recruit = CharacterDefinition(
   role: CharacterRole.playerRoster,
   visualScale: 0.5,
   crowdSeparationRadius: 0,
-  baseStats: MobStats(hp: 20, atk: 6, def: 2, speed: 1.5, attackSpeed: 1.6, seekRange: 4.5),
+  baseStats: MobStats(
+      hp: 20, atk: 6, def: 2, speed: 1.5, attackSpeed: 1.6, seekRange: 4.5),
   launchEnergyCost: 14,
   levels: [],
   unlockCost: 0,
@@ -33,7 +34,8 @@ const _baseEnemy = CharacterDefinition(
   role: CharacterRole.stageEnemy,
   visualScale: 0.5,
   crowdSeparationRadius: 0,
-  baseStats: MobStats(hp: 12, atk: 4, def: 1, speed: 1.4, attackSpeed: 1.2, seekRange: 3.0),
+  baseStats: MobStats(
+      hp: 12, atk: 4, def: 1, speed: 1.4, attackSpeed: 1.2, seekRange: 3.0),
   launchEnergyCost: 0,
   levels: [],
   unlockCost: 0,
@@ -92,7 +94,8 @@ BattleRound _newStage1Round({int mainTowerHealth = 1500}) {
     launchLift: 2.2,
     spread: 0.0, // deterministic for the test
     ammoCapacity: 130,
-    rng: math.Random(20260811), // seeded: launchY jitter must not make this flaky
+    rng: math.Random(
+        20260811), // seeded: launchY jitter must not make this flaky
   );
 
   final abilities = BattleAbilities(
@@ -150,7 +153,9 @@ void _spawnStartingFormation(BattleRound round) {
 
 void main() {
   group('a full Stage 1 round can be won headlessly', () {
-    test('the opening formation plus continuous cannon fire destroys all three towers', () {
+    test(
+        'the opening formation plus continuous cannon fire destroys all three towers',
+        () {
       final round = _newStage1Round();
       _spawnStartingFormation(round);
 
@@ -161,7 +166,8 @@ void main() {
       var simulatedSeconds = 0.0;
       const maxSeconds = 90.0;
 
-      while (round.outcome == RoundOutcome.ongoing && simulatedSeconds < maxSeconds) {
+      while (round.outcome == RoundOutcome.ongoing &&
+          simulatedSeconds < maxSeconds) {
         round.aimAndFire(0, -1);
         round.advance(dt);
         simulatedSeconds += dt;
@@ -174,7 +180,8 @@ void main() {
       expect(round.base.alive, isTrue);
     });
 
-    test('a stronger main castle survives longer but still falls eventually', () {
+    test('a stronger main castle survives longer but still falls eventually',
+        () {
       final round = _newStage1Round(mainTowerHealth: 100000);
       _spawnStartingFormation(round);
       const dt = 1 / 60.0;
@@ -192,7 +199,9 @@ void main() {
   });
 
   group('losing to an empty base', () {
-    test('a base with the enemy already inside its engage ring falls to zero HP', () {
+    test(
+        'a base with the enemy already inside its engage ring falls to zero HP',
+        () {
       final round = _newStage1Round();
       // Skip the march: place enemies directly at the base's defence line.
       for (var i = 0; i < 5; i++) {
@@ -218,8 +227,10 @@ void main() {
 
   group('losing to an ammo-out grace period', () {
     test('an emptied cannon with no live player mobs loses after 1.5s', () {
-      final round = _newStage1Round(mainTowerHealth: 1000000); // never wins in time
-      final tinyCannon = Cannon(ammoCapacity: 1, fireRate: 0.01, spread: 0.0, rng: math.Random(1));
+      final round =
+          _newStage1Round(mainTowerHealth: 1000000); // never wins in time
+      final tinyCannon = Cannon(
+          ammoCapacity: 1, fireRate: 0.01, spread: 0.0, rng: math.Random(1));
       final tinyRound = BattleRound(
         content: _content,
         towers: round.towers,
@@ -242,7 +253,8 @@ void main() {
       for (final m in tinyRound.mobs) {
         m.dead = true;
       }
-      while (tinyRound.outcome == RoundOutcome.ongoing && simulatedSeconds < 3.0) {
+      while (
+          tinyRound.outcome == RoundOutcome.ongoing && simulatedSeconds < 3.0) {
         tinyRound.advance(dt);
         simulatedSeconds += dt;
       }
@@ -252,7 +264,12 @@ void main() {
 
     test('unlimited ammo never triggers the grace-period loss', () {
       final round = _newStage1Round(mainTowerHealth: 1000000);
-      final unlimitedCannon = Cannon(unlimited: true, ammoCapacity: 1, fireRate: 0.01, spread: 0.0, rng: math.Random(1));
+      final unlimitedCannon = Cannon(
+          unlimited: true,
+          ammoCapacity: 1,
+          fireRate: 0.01,
+          spread: 0.0,
+          rng: math.Random(1));
       final unlimitedRound = BattleRound(
         content: _content,
         towers: round.towers,
@@ -272,9 +289,17 @@ void main() {
   group('gates apply to player mobs crossing them', () {
     test('a x2 gate clones a passing player mob exactly once', () {
       final round = _newStage1Round()
-        ..gates.add(Gate(multiplier: 2, x: 0, z: 5, halfWidth: 1.15, halfDepth: 0.3));
+        ..gates.add(
+            Gate(multiplier: 2, x: 0, z: 5, halfWidth: 1.15, halfDepth: 0.3));
 
-      final mob = round.spawnMob(0, 'base', x: 0, y: 0.05, z: 6, phase: MobPhase.grounded)!;
+      // Isolate the gate path from the authored towers' automatic waves.
+      for (final tower in round.towers) {
+        tower.enemyReserve = 0;
+      }
+
+      final mob = round.spawnMob(0, 'base',
+          x: 0, y: 0.05, z: 6, phase: MobPhase.grounded)!;
+      expect(mob.characterId, equals('base'));
       final before = round.mobs.length;
 
       // Move it across the gate manually via one crowd-free step: the
@@ -289,6 +314,11 @@ void main() {
       }
 
       expect(round.mobs.length, greaterThan(before));
+      expect(
+        round.mobs.where((candidate) => candidate.index != mob.index),
+        contains(
+            predicate<Mob>((candidate) => candidate.characterId == 'base')),
+      );
     });
   });
 
