@@ -397,6 +397,24 @@ now come from this same real catalog (`statsAtLevel(0)`/`tuningAtLevel(0)`)
 instead of hand-typed numbers, closing the gap `stage1_content.dart`
 (now deleted) stood in for.
 
+**Home was redone against an approved Claude Design mock.** The user
+supplied `MobRush Home.dc.html` (Claude Design project
+`bde0666b-61ed-49bc-8857-571e1b7271ca`) with its own real art bundle
+(`avatar/castle-scene/coin/gear/gem/logo/nav-*.png`, `bolt.png`).
+`home_screen.dart` was rebuilt against it directly: every `Positioned` is
+the mock's own 540×960 px layout converted to a fraction of the real
+screen size, and colours/gradients/border widths are copied from its
+inline styles rather than re-approximated. `castle-scene.png` (opaque, no
+alpha) was re-encoded to JPEG, 1.7MB → 220KB, with no other change. The
+mock's animations are real `AnimationController`s, not decoration: the
+logo floats and glows, the BATTLE button pulses with a diagonal light
+sweep, and three background sparks drift — the same `mrFloat`/`mrGlow`/
+`mrSweep`/`mrPulse`/`mrSpark` keyframes translated from CSS to Flutter.
+The mock's BATTLE-tab mode list, SHOP-tab pack grid, and matchmaking
+search modal are demo-data prototypes with no real system behind them and
+were not carried over — this app's own real `ShopScreen`/`Stage1Screen`
+stay the nav targets instead of being replaced by non-functional mockups.
+
 **Purchases now reach the battlefield.** This was the phase's biggest
 functional hole and is closed: `BattleRound.spawnMob` read `baseStats`
 unconditionally, so a bought character level never changed what walked

@@ -34,6 +34,7 @@ flutter:
     - assets/structures/gate/
     - assets/home/
     - assets/home/icons/
+    - assets/home/design/
     - assets/campaign/
     - assets/content/
     - assets/ground/
