@@ -35,6 +35,7 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
   final PlayerProfile? profile;
 
   late final BattleRound round;
+  late final ContentCatalog content;
   late final CharacterAtlas atlas;
   late final BattleSceneRenderer scene;
   late final IsoProjection projection;
@@ -72,6 +73,37 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
 
   void startBattle() => battleStarted = true;
 
+  static const int waveCount = 5;
+
+  int get waveIndex {
+    if (!simReady) return 1;
+    const authoredReserve = 60;
+    final remaining =
+        round.towers.fold<int>(0, (sum, tower) => sum + tower.enemyReserve);
+    final progress =
+        ((authoredReserve - remaining) / authoredReserve).clamp(0.0, 1.0);
+    return (1 + (progress * waveCount).floor()).clamp(1, waveCount);
+  }
+
+  List<CharacterDefinition> get squadCharacters => content.characters
+      .where((character) => character.isPlayerRosterCharacter)
+      .take(4)
+      .toList(growable: false);
+
+  bool isCharacterSelectable(String characterId) {
+    if (characterId == 'base') return true;
+    final p = profile;
+    if (p == null) return false;
+    return p.characterRoster.contains(characterId) ||
+        p.unlockedCharacterIds.contains(characterId);
+  }
+
+  bool selectCharacter(String characterId) {
+    if (!isCharacterSelectable(characterId)) return false;
+    round.abilities.selectedCharacterId = characterId;
+    return true;
+  }
+
   /// Port of `Hud.TryBattleAction`'s RUSH branch. Returns a short hint
   /// string for the caller to show, mirroring the three C# outcomes:
   /// deployed, unit-limit reached, or not enough energy.
@@ -89,7 +121,8 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
   /// Port of `Hud.TryAbility`. Returns a short hint string for the caller.
   String tryAbility(Ability ability) {
     if (!battleStarted) return 'START THE BATTLE FIRST';
-    final result = round.abilities.tryUse(ability, mobs: round.mobs, towers: round.towers);
+    final result =
+        round.abilities.tryUse(ability, mobs: round.mobs, towers: round.towers);
     if (!result.applied) return 'NO VALID TARGET';
     return switch (ability) {
       Ability.freeze => 'ENEMIES FROZEN',
@@ -101,23 +134,38 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   Future<void> onLoad() async {
     atlas = await CharacterAtlas.load();
-    final content = await loadGameContent();
+    content = await loadGameContent();
 
-    projection = IsoProjection.fit(screenWidth: size.x, screenHeight: size.y);
-    origin = ui.Offset(size.x / 2, size.y * 0.72);
+    projection = IsoProjection.fit(
+      screenWidth: size.x,
+      screenHeight: size.y * 0.75,
+    );
+    origin = ui.Offset(size.x / 2, size.y * 0.60);
 
     final towers = [
       EnemyTower(
-        maxHealth: 300, enemyReserve: 20, spawnInterval: 0.9,
-        spawnedCharacterId: 'base_enemy', x: -5.25, z: -8.0,
+        maxHealth: 300,
+        enemyReserve: 20,
+        spawnInterval: 0.9,
+        spawnedCharacterId: 'base_enemy',
+        x: -5.25,
+        z: -13.7,
       ),
       EnemyTower(
-        maxHealth: 300, enemyReserve: 20, spawnInterval: 0.9,
-        spawnedCharacterId: 'base_enemy', x: 5.25, z: -8.0,
+        maxHealth: 300,
+        enemyReserve: 20,
+        spawnInterval: 0.9,
+        spawnedCharacterId: 'base_enemy',
+        x: 5.25,
+        z: -13.7,
       ),
       EnemyTower(
-        maxHealth: 1500, enemyReserve: 20, spawnInterval: 0.9,
-        spawnedCharacterId: 'base_enemy', x: 0.0, z: -12.0,
+        maxHealth: 1500,
+        enemyReserve: 20,
+        spawnInterval: 0.9,
+        spawnedCharacterId: 'base_enemy',
+        x: 0.0,
+        z: -20.5,
       ),
     ];
 
@@ -129,7 +177,8 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       (c) => c.id == (p?.selectedCannonId ?? ''),
       orElse: () => content.cannons.firstWhere((c) => c.id == 'cannon'),
     );
-    final cannonStats = cannonDef.statsAtLevel(p?.getCannonLevel(cannonDef.id) ?? 0);
+    final cannonStats =
+        cannonDef.statsAtLevel(p?.getCannonLevel(cannonDef.id) ?? 0);
     rushUnitCount = cannonStats.rushUnitCount;
 
     // The roster's first entry is the primary character, matching
@@ -172,15 +221,18 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       selectedCharacterId: characterId,
     );
 
+    final gates = [
+      Gate(multiplier: 2, x: -3.2, z: 0),
+      Gate(isAdditive: true, addAmount: 5, x: 3.2, z: 0),
+    ];
+
     round = BattleRound(
       content: content,
       towers: towers,
       base: base,
       cannon: cannon,
       abilities: abilities,
-      gates: [
-        Gate(multiplier: 2, x: 0, z: 1.5),
-      ],
+      gates: gates,
       maxMobs: 350,
       characterLevels: characterLevels,
     );
@@ -192,35 +244,58 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
     final mainImg = await StructureImage.load(stage1Castles.main.assetPath);
     structures.add(
       StructurePlacement.castle(
-        castleSpec: stage1Castles.main, image: mainImg, worldX: 0, worldZ: -12.0,
+        castleSpec: stage1Castles.main,
+        image: mainImg,
+        worldX: 0,
+        worldZ: -20.5,
+        towerIndex: 2,
       ),
     );
     final sideSpec = stage1Castles.side!;
     final sideImg = await StructureImage.load(sideSpec.assetPath);
     structures.add(
       StructurePlacement.castle(
-        castleSpec: sideSpec, image: sideImg, worldX: -5.25, worldZ: -8.0,
+        castleSpec: sideSpec,
+        image: sideImg,
+        worldX: -5.25,
+        worldZ: -13.7,
+        towerIndex: 0,
       ),
     );
     structures.add(
       StructurePlacement.castle(
-        castleSpec: sideSpec, image: sideImg, worldX: 5.25, worldZ: -8.0,
+        castleSpec: sideSpec,
+        image: sideImg,
+        worldX: 5.25,
+        worldZ: -13.7,
+        towerIndex: 1,
       ),
     );
     final gateImg = await StructureImage.load(gateArtwork.assetPath);
-    structures.add(
-      StructurePlacement.gate(
-        gateSpec: gateArtwork, image: gateImg, worldX: 0, worldZ: 1.5,
-      ),
-    );
+    for (final gate in gates) {
+      structures.add(
+        StructurePlacement.gate(
+          gateSpec: gateArtwork,
+          image: gateImg,
+          worldX: gate.x,
+          // The transparent artwork extends toward the player. Draw it a
+          // little ahead of the trigger so units read below the gate.
+          worldZ: gate.z - 2.4,
+          gateLabel: gate.displayText,
+        ),
+      );
+    }
 
-    final groundImg = await StructureImage.load('assets/ground/stage1_ground.jpg');
+    final groundImg =
+        await StructureImage.load('assets/ground/stage1_ground.jpg');
     add(BackgroundRenderer(size: size));
     add(GroundRenderer(
       projection: projection,
       origin: origin,
       laneHalf: Mob.laneHalf,
       groundImage: groundImg,
+      viewportSize: size,
+      fullBleed: true,
     ));
     scene = BattleSceneRenderer(
       round: round,
@@ -255,15 +330,21 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
   void _spawnStartingFormation(String characterId) {
     for (var i = 0; i < 32; i++) {
       round.spawnMob(
-        0, characterId,
-        x: (i % 8 - 3.5) * 0.72, y: 0.5, z: 5.6 + (i ~/ 8) * 0.78,
+        0,
+        characterId,
+        x: (i % 8 - 3.5) * 0.92,
+        y: 0.5,
+        z: 4.3 + (i ~/ 8) * 0.78,
         phase: MobPhase.grounded,
       );
     }
     for (var i = 0; i < 20; i++) {
       round.spawnMob(
-        1, 'base_enemy',
-        x: (i % 6 - 2.5) * 0.9, y: 0.5, z: -6.2 - (i ~/ 6) * 0.88,
+        1,
+        'base_enemy',
+        x: (i % 5 - 2) * 1.02,
+        y: 0.5,
+        z: -7.4 - (i ~/ 5) * 1.02,
         phase: MobPhase.grounded,
       );
     }
@@ -328,16 +409,20 @@ class Stage1Game extends FlameGame with TapCallbacks, DragCallbacks {
       if (round.mobs.length > before) Sfx.instance.play('shoot');
     }
 
-    final sw = Stopwatch()..start();
-    round.advance(dt);
-    sw.stop();
-    simMs = sw.elapsedMicroseconds / 1000.0;
-    scene.advanceClock(dt);
-    elapsedSeconds += dt;
+    if (battleStarted) {
+      final sw = Stopwatch()..start();
+      round.advance(dt);
+      sw.stop();
+      simMs = sw.elapsedMicroseconds / 1000.0;
+      scene.advanceClock(dt);
+      elapsedSeconds += dt;
 
-    if (!_outcomeReported && round.outcome != RoundOutcome.ongoing) {
-      _outcomeReported = true;
-      onOutcome?.call(round.outcome);
+      if (!_outcomeReported && round.outcome != RoundOutcome.ongoing) {
+        _outcomeReported = true;
+        onOutcome?.call(round.outcome);
+      }
+    } else {
+      simMs = 0;
     }
 
     _frameSamples.add(total);

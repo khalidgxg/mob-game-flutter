@@ -27,12 +27,16 @@ class GroundRenderer extends Component {
     required this.origin,
     required this.laneHalf,
     this.groundImage,
+    this.viewportSize,
+    this.fullBleed = false,
   });
 
   final IsoProjection projection;
   final ui.Offset origin;
   final double laneHalf;
   final StructureImage? groundImage;
+  final Vector2? viewportSize;
+  final bool fullBleed;
 
   static const double _nearZ = 24.0;
   static const double _farZ = -24.0;
@@ -48,6 +52,31 @@ class GroundRenderer extends Component {
   }
 
   void _renderTexture(ui.Canvas canvas, ui.Image image) {
+    if (fullBleed && viewportSize != null) {
+      final viewport = viewportSize!;
+      final viewportAspect = viewport.x / viewport.y;
+      final imageAspect = image.width / image.height;
+      double srcWidth = image.width.toDouble();
+      double srcHeight = image.height.toDouble();
+      if (imageAspect > viewportAspect) {
+        srcWidth = srcHeight * viewportAspect;
+      } else {
+        srcHeight = srcWidth / viewportAspect;
+      }
+      final src = ui.Rect.fromCenter(
+        center: ui.Offset(image.width / 2, image.height / 2),
+        width: srcWidth,
+        height: srcHeight,
+      );
+      canvas.drawImageRect(
+        image,
+        src,
+        ui.Rect.fromLTWH(0, 0, viewport.x, viewport.y),
+        ui.Paint()..filterQuality = ui.FilterQuality.high,
+      );
+      return;
+    }
+
     final pitch = projection.pitchDegrees * math.pi / 180.0;
     final scaleX = projection.pixelsPerUnit;
     final scaleY = projection.pixelsPerUnit * math.sin(pitch);

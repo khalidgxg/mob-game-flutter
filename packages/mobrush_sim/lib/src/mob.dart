@@ -22,6 +22,7 @@ class Mob {
   Mob({
     required this.team,
     required this.index,
+    this.characterId = '',
     this.speed = 1.76,
     this.seekRange = 2.6,
     this.crowdSeparationRadius = 0.0,
@@ -33,6 +34,9 @@ class Mob {
   /// Stable creation order. Replaces `transform.GetSiblingIndex()`, which the
   /// C# version uses as the tie-breaker when two units occupy one point.
   final int index;
+
+  /// Authored character definition used to create this unit.
+  final String characterId;
 
   double x = 0, y = 0, z = 0;
   double velX = 0, velY = 0, velZ = 0;
@@ -88,8 +92,7 @@ class Mob {
   /// A mob locked in melee holds its ground but is still jostled apart.
   static const double jostleFraction = 0.12;
 
-  double get bodyRadius =>
-      math.max(minBodyRadius, crowdSeparationRadius * 0.5);
+  double get bodyRadius => math.max(minBodyRadius, crowdSeparationRadius * 0.5);
 
   double get bodySurplus => bodyRadius - minBodyRadius;
 
@@ -239,7 +242,8 @@ class Mob {
 
     final dx = x - t.x, dz = z - t.z;
     final d = math.sqrt(dx * dx + dz * dz);
-    final release = CombatLimits.clashDistance(
+    final release =
+        CombatLimits.clashDistance(
           CombatLimits.baseClashRadius,
           bodySurplus,
           t.bodySurplus,
